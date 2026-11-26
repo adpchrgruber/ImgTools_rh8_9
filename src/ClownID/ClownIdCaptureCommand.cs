@@ -135,8 +135,7 @@ namespace ImgTools
                 }
             }
 
-            var jsonPath = Path.ChangeExtension(path, ".json");
-            File.WriteAllText(jsonPath, BuildJson(doc, view, path, imageWidth, imageHeight, snapped, background, owners, counts));
+            CaptureIO.SaveJson(path, BuildJson(doc, view, path, imageWidth, imageHeight, snapped, background, owners, counts));
 
             int visible = owners.Keys.Count(k => counts.ContainsKey(k));
             int collisions = owners.Values.Count(l => l.Count > 1);
@@ -144,7 +143,6 @@ namespace ImgTools
             if (collisions > 0)
                 RhinoApp.WriteLine("Clown ID: {0} colour(s) shared by more than one object; see \"collisions\" in the JSON.", collisions);
             RhinoApp.WriteLine("Saved {0}", path);
-            RhinoApp.WriteLine("Saved {0}", jsonPath);
             return true;
         }
 

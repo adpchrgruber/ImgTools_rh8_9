@@ -113,6 +113,10 @@ namespace ImgTools
                 },
             };
 
+            var json = new CheckBox { Text = "Write a JSON file next to each image", Checked = CaptureIO.WriteJson };
+            json.CheckedChanged += (s, e) => CaptureIO.WriteJson = json.Checked == true;
+            json.ToolTip = "Notes on how each image was made: Clown ID colour → object, depth range, light and camera. Applies to every capture and to Capture All.";
+
             var close = new Button { Text = "Close" };
             close.Click += (s, e) => Close();
 
@@ -163,6 +167,7 @@ namespace ImgTools
                     new GroupBox { Text = "Ambient occlusion  (AOView, AOCapture)", Content = ao, Padding = new Padding(8) },
                     new GroupBox { Text = "Normals  (NormalView, NormalCapture)", Content = normalsLayout, Padding = new Padding(8) },
                     new GroupBox { Text = "Capture All  (saves these at once)", Content = all, Padding = new Padding(8) },
+                    new GroupBox { Text = "Files  (all captures)", Content = json, Padding = new Padding(8) },
                     new StackLayout { Orientation = Orientation.Horizontal, Items = { null, close } },
                 },
             };

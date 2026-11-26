@@ -59,12 +59,14 @@ namespace ImgTools
                 var s = new OptionToggle(CaptureAllSettings.Shadows, "Off", "On");
                 var a = new OptionToggle(CaptureAllSettings.Ao, "Off", "On");
                 var n = new OptionToggle(CaptureAllSettings.Normals, "Off", "On");
+                var j = new OptionToggle(CaptureIO.WriteJson, "Off", "On");
                 int vi = go.AddOptionToggle("View", ref v);
                 int ci = go.AddOptionToggle("ClownID", ref c);
                 int di = go.AddOptionToggle("ZDepth", ref d);
                 int si = go.AddOptionToggle("Shadows", ref s);
                 int ai = go.AddOptionToggle("AO", ref a);
                 int ni = go.AddOptionToggle("Normals", ref n);
+                int ji = go.AddOptionToggle("Json", ref j);
                 go.AddOptionInteger("Width", ref width);
                 go.AddOptionInteger("Height", ref height);
                 var res = go.Get();
@@ -77,6 +79,7 @@ namespace ImgTools
                     else if (index == si) CaptureAllSettings.Shadows = s.CurrentValue;
                     else if (index == ai) CaptureAllSettings.Ao = a.CurrentValue;
                     else if (index == ni) CaptureAllSettings.Normals = n.CurrentValue;
+                    else if (index == ji) CaptureIO.WriteJson = j.CurrentValue;
                     continue;
                 }
                 if (res == GetResult.Nothing)
@@ -162,7 +165,8 @@ namespace ImgTools
             var manifest = PathFor("passes", ".json");
             try
             {
-                File.WriteAllText(manifest, Manifest(doc, view, w, h, saved));
+                if (CaptureIO.WriteJson)
+                    File.WriteAllText(manifest, Manifest(doc, view, w, h, saved));
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {

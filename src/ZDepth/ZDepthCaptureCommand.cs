@@ -102,7 +102,6 @@ namespace ImgTools
                 : image.GeometryRange.IsValid ? image.GeometryRange : new Interval(0, 1);
             bool white = ZDepthSettings.NearIsWhite;
 
-            var jsonPath = Path.ChangeExtension(path, ".json");
             string encoding, background;
             try
             {
@@ -142,7 +141,7 @@ namespace ImgTools
                         : "grey = " + max + " * (depth - near) / (far - near), clamped";
                     background = white ? "0 (black)" : max + " (white)";
                 }
-                File.WriteAllText(jsonPath, BuildJson(doc, view, path, image, camera, range, fixedRange, encoding, background));
+                CaptureIO.SaveJson(path, BuildJson(doc, view, path, image, camera, range, fixedRange, encoding, background));
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {
@@ -154,7 +153,6 @@ namespace ImgTools
                 "Z Depth: {0} {1}x{2}, near {3:G6}, far {4:G6} {5}.", Formats[format], image.Width, image.Height,
                 range.T0, range.T1, doc.ModelUnitSystem));
             RhinoApp.WriteLine("Saved {0}", path);
-            RhinoApp.WriteLine("Saved {0}", jsonPath);
             return true;
         }
 

@@ -62,6 +62,26 @@ namespace ImgTools
             return path;
         }
 
+        /// <summary>
+        /// Whether captures write a JSON file next to each image (and Capture All its
+        /// _passes.json). On by default; saved with Rhino's settings.
+        /// </summary>
+        public static bool WriteJson
+        {
+            get => ImgToolsPlugin.Instance?.Settings.GetBool("WriteJson", true) ?? true;
+            set => ImgToolsPlugin.Instance?.Settings.SetBool("WriteJson", value);
+        }
+
+        /// <summary>Writes json next to the image (same name, .json) when <see cref="WriteJson"/> is on.</summary>
+        public static void SaveJson(string imagePath, string json)
+        {
+            if (!WriteJson)
+                return;
+            var path = Path.ChangeExtension(imagePath, ".json");
+            File.WriteAllText(path, json);
+            RhinoApp.WriteLine("Saved {0}", path);
+        }
+
         public static string Num(double v) => double.IsNaN(v) || double.IsInfinity(v) ? "null" : v.ToString("R", CultureInfo.InvariantCulture);
 
         public static string Vec(Point3d p) => "[" + Num(p.X) + ", " + Num(p.Y) + ", " + Num(p.Z) + "]";

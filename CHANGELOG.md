@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **JSON files can be switched off.** *Write a JSON file next to each image* in the options
+  window (and `Json` in `CaptureAll`) turns off the JSON next to every capture and Capture
+  All's `_passes.json`. On by default.
+
 ## 1.5.0-beta — 2026-11-26
 
 - **Capture All.** One command and toolbar button saves the view as it looks plus Clown ID,

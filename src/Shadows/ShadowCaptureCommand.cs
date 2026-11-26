@@ -131,7 +131,6 @@ namespace ImgTools
                 "Shadow capture: {0}x{1}, {2:0.#}% of the image in shadow, {3} triangles, {4:0.0} s.",
                 image.Width, image.Height, 100.0 * shadowed / image.Value.Length, image.Triangles, clock.Elapsed.TotalSeconds));
             RhinoApp.WriteLine("Saved {0}", path);
-            RhinoApp.WriteLine("Saved {0}", Path.ChangeExtension(path, ".json"));
             return true;
         }
 
@@ -274,7 +273,6 @@ namespace ImgTools
                 "AO capture: {0}x{1}, radius {2:G4}, {3} triangles, {4:0.0} s.",
                 image.Width, image.Height, _radius, image.Triangles, clock.Elapsed.TotalSeconds));
             RhinoApp.WriteLine("Saved {0}", path);
-            RhinoApp.WriteLine("Saved {0}", Path.ChangeExtension(path, ".json"));
             return true;
         }
     }
@@ -307,7 +305,7 @@ namespace ImgTools
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 ImageWriters.WritePng8(path, image.Width, image.Height, pixels);
-                File.WriteAllText(Path.ChangeExtension(path, ".json"), json);
+                CaptureIO.SaveJson(path, json);
                 return true;
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)

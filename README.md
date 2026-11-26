@@ -24,6 +24,11 @@ RhinoCommon for Mac and Windows.
 pass in one go, at the same size and from the same camera, with matching names:
 `<name>_view.png`, `_clownid`, `_zdepth`, `_shadows`, `_ao`, `_normal` (each with its JSON) and
 `<name>_passes.json` listing them. Choose which passes in its options or in the options window.
+
+**JSON files.** Every capture writes a small JSON file next to its image: the Clown ID colour →
+object key, the depth range and units, the light, radius or normal convention used, and the
+camera. They are optional; turn them off with *Write a JSON file next to each image* in the
+options window (or `Json=Off` in `CaptureAll`).
 On the 300-object test scene (2.4 million triangles) at 1280×720 all six take about 3 seconds.
 
 ![Capture All: view, Clown ID, Z Depth, shadows, AO, normals](docs/capture-all.png)

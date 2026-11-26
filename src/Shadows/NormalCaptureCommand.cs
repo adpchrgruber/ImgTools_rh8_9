@@ -116,7 +116,7 @@ namespace ImgTools
                     encoding = "rgb = normal * 0.5 + 0.5 (x -> red, y -> green, z -> blue); edges blended with the background";
                     background = flat ? "flat normal (0.5, 0.5, 1) = (128, 128, 255)" : "black";
                 }
-                File.WriteAllText(Path.ChangeExtension(path, ".json"), BuildJson(doc, view, path, image, scene.Camera, format, cameraSpace, greenUp, encoding, background));
+                CaptureIO.SaveJson(path, BuildJson(doc, view, path, image, scene.Camera, format, cameraSpace, greenUp, encoding, background));
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {
@@ -127,7 +127,6 @@ namespace ImgTools
             RhinoApp.WriteLine(string.Format(CultureInfo.InvariantCulture, "Normal capture: {0} {1}x{2}, {3}, {4:0.0} s.",
                 NormalSettings.Formats[format], image.Width, image.Height, NormalSettings.Describe(), clock.Elapsed.TotalSeconds));
             RhinoApp.WriteLine("Saved {0}", path);
-            RhinoApp.WriteLine("Saved {0}", Path.ChangeExtension(path, ".json"));
             return true;
         }
 
