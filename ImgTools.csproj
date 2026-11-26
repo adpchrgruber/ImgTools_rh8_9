@@ -21,7 +21,7 @@
     <Authors>adpchrgruber</Authors>
     <Company>adpchrgruber</Company>
     <Description>Image passes for compositing your renders: Clown ID (flat object-ID colours), Z Depth (live depth view and exact PNG/16-bit PNG/EXR depth maps), Shadows (the raw cast shadows of the sun or lights, hard or soft) and Ambient Occlusion. Replaces ClownID and ZDepth. Works on Mac and Windows.</Description>
-    <RepositoryUrl>https://github.com/adpchrgruber/ImgTools_Rh8</RepositoryUrl>
+    <RepositoryUrl>https://github.com/adpchrgruber/ImgTools_rh8_9</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

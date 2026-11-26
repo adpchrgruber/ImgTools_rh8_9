@@ -7,7 +7,7 @@ date-released: 2026-11-26
 authors:
   - alias: adpchrgruber
 license: MIT
-repository-code: "https://github.com/adpchrgruber/ImgTools_Rh8"
+repository-code: "https://github.com/adpchrgruber/ImgTools_rh8_9"
 abstract: >-
   Rhino 8/9 plug-in that renders image passes for compositing: an object-ID (clown) pass,
   a depth pass, a raw shadow pass (hard or soft) and an ambient occlusion pass, each aligned
