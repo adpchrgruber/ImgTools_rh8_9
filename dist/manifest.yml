@@ -1,0 +1,27 @@
+name: ImgTools
+version: 1.0.0-beta
+authors:
+- adpchrgruber
+description: "Image passes for compositing your renders: Clown ID (flat object-ID colours), Z Depth (live depth view and exact PNG/16-bit PNG/EXR depth maps), Shadows (the raw cast shadows of the sun or lights, hard or soft) and Ambient Occlusion. Replaces ClownID and ZDepth. Works on Mac and Windows."
+url: https://github.com/adpchrgruber/ImgTools_Rh8
+icon: icon.png
+keywords:
+- clown
+- object-id
+- id-pass
+- mask
+- matte
+- depth
+- zdepth
+- z-buffer
+- depth-map
+- shadow
+- shadow-pass
+- shadow-matte
+- ambient-occlusion
+- ao
+- controlnet
+- render
+- compositing
+- display-mode
+- mac

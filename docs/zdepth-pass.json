@@ -1,0 +1,23 @@
+{
+  "image": "zdepth-pass.png",
+  "document": "",
+  "view": "Perspective",
+  "width": 1120,
+  "height": 684,
+  "depth": "distance from the camera along the view direction",
+  "units": "Millimeters",
+  "range": "auto",
+  "near": 19633.900945872523,
+  "far": 32429.97132445315,
+  "visibleDepth": [19638.28125, 31163.125],
+  "encoding": "grey = 255 * (far - depth) / (far - near), clamped",
+  "background": "0 (black)",
+  "camera": {
+    "projection": "perspective",
+    "location": [17199.465044467353, -14398.611508892647, 13166.931926393007],
+    "direction": [-0.43300238151964754, 0.7500041250340316, -0.5000027500226877],
+    "up": [-0.24999587483992183, 0.4330182589606037, 0.8660238160522779],
+    "lensLength": 50.00000000000042,
+    "frustum": {"left": -333.3007269590095, "right": 333.3007269590095, "bottom": -203.55151539282375, "top": 203.55151539282375, "near": 848.1313141367727}
+  }
+}

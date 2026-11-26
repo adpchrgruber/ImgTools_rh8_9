@@ -1,0 +1,23 @@
+{
+  "image": "shadow-pass.png",
+  "document": "",
+  "view": "Perspective",
+  "width": 1120,
+  "height": 684,
+  "source": "Sun",
+  "shadows": "cast shadows only",
+  "encoding": "grey = 255 * share of lights blocked (white = shadow, black = lit)",
+  "background": "0 (black, no shadow)",
+  "antialias": 2,
+  "triangles": 41462,
+  "lights": [
+    {"name": "Sun", "type": "directional", "towardsLight": [-0.3830222215594891, -0.6634139481689384, 0.6427876096865393]}
+  ],
+  "camera": {
+    "projection": "perspective",
+    "location": [17199.465044467353, -14398.611508892647, 13166.931926393007],
+    "direction": [-0.43300238151964754, 0.7500041250340315, -0.5000027500226877],
+    "up": [-0.24999587483992183, 0.43301825896060364, 0.8660238160522779],
+    "lensLength": 50.00000000000002
+  }
+}

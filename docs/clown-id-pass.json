@@ -1,0 +1,22 @@
+{
+  "image": "clown-id-pass.png",
+  "document": "",
+  "view": "Perspective",
+  "width": 1120,
+  "height": 684,
+  "background": "#000000",
+  "backgroundPixels": 554241,
+  "snappedEdgePixels": 213757,
+  "objects": [
+    {"color": "#51C946", "id": "e06005e1-f01c-4a1b-82ce-34e4affa5ea0", "name": "ground", "layer": "Default", "type": "Brep", "pixels": 122595},
+    {"color": "#3BF514", "id": "f4f9cf71-dd6b-4607-b10c-8ad0f105ab20", "name": "tower", "layer": "Default", "type": "Brep", "pixels": 20184},
+    {"color": "#B57601", "id": "5e1f39cf-7f52-47bb-9c74-601730dc8fd6", "name": "base", "layer": "Default", "type": "Brep", "pixels": 17580},
+    {"color": "#F63B37", "id": "ed264456-cd9a-48db-9a3b-d804566defb5", "name": "cone", "layer": "Default", "type": "Brep", "pixels": 13680},
+    {"color": "#38087B", "id": "11e68d7a-3d9d-408f-b327-f89cd704581b", "name": "sphere", "layer": "Default", "type": "Brep", "pixels": 12275},
+    {"color": "#0CBB68", "id": "fad59471-b638-4454-a649-973ed5db1578", "name": "torus", "layer": "Default", "type": "Brep", "pixels": 9837},
+    {"color": "#62AB05", "id": "42b54727-3eaa-48ab-b0a4-8d9e4e9ce078", "name": "cylinder", "layer": "Default", "type": "Brep", "pixels": 8675},
+    {"color": "#838F22", "id": "22d1139b-653d-440f-84d5-72540cd455ce", "name": "", "layer": "Default", "type": "InstanceReference", "pixels": 4449},
+    {"color": "#A85E33", "id": "93c52df3-7bd3-4930-a89f-32b644660768", "name": "", "layer": "Default", "type": "InstanceReference", "pixels": 2564}
+  ],
+  "collisions": []
+}

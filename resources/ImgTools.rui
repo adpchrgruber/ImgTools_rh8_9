@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RhinoUI major_ver="5" minor_ver="0" guid="485ca4bf-80b6-44a7-997e-aab71f8e8fd2" localize="False" default_language_id="1033" dpi_scale="100">
+  <extend_rhino_menus>
+    <menu guid="39f5f716-5cbd-404e-b73a-3bb32932f896">
+      <text>
+        <locale_1033>Extend Rhino Menus</locale_1033>
+      </text>
+    </menu>
+  </extend_rhino_menus>
+  <menus />
+  <tool_bar_groups>
+    <tool_bar_group guid="7150e1ba-565b-46d2-b045-cc98cdde1358" dock_bar_guid64="dae3736a-d7c5-4020-9b85-2464d144b39e" active_tool_bar_group="3bb9f02a-5155-493b-b38f-e426f0871877" single_file="True" hide_single_tab="True" point_floating="400,200">
+      <text>
+        <locale_1033>ImgTools</locale_1033>
+      </text>
+      <tool_bar_group_item guid="312ac3cd-dcd8-4674-a33d-caf3ee11aca4" major_version="1" minor_version="1">
+        <text>
+          <locale_1033>ImgTools</locale_1033>
+        </text>
+        <tool_bar_id>3bb9f02a-5155-493b-b38f-e426f0871877</tool_bar_id>
+      </tool_bar_group_item>
+      <dock_bar_info dpi_scale="100" dock_bar="False" docking="True" horz="True" visible="True" floating="True" mru_float_style="8192" bar_id="59650" mru_width="100" point_pos="-2,-2" float_point="400,200" dock_location_u="59419" dock_location="top" float_size="200,46" />
+    </tool_bar_group>
+  </tool_bar_groups>
+  <tool_bars>
+    <tool_bar guid="3bb9f02a-5155-493b-b38f-e426f0871877" bitmap_id="a430581f-5f34-4b50-a219-c9fce38923f3">
+      <text>
+        <locale_1033>ImgTools</locale_1033>
+      </text>
+      <tool_bar_item guid="7b4c28f3-5ef8-4097-b8dd-8e4c60dc7d20">
+        <left_macro_id>c630949d-947d-4262-9b06-2b4f4d1bd7f3</left_macro_id>
+      </tool_bar_item>
+      <tool_bar_item guid="ac494afc-3985-4107-b634-7416c8b22eda">
+        <left_macro_id>b8f3e1d2-6a4c-4f7e-9d1b-2c5e8a7f3b61</left_macro_id>
+      </tool_bar_item>
+      <tool_bar_item guid="dc31e337-0f8f-4eaf-9e72-e9de09ac8e88">
+        <left_macro_id>6420923d-59d3-45e4-b9f5-8b50f995b552</left_macro_id>
+        <right_macro_id>490f5a7d-18e8-472f-86ed-4d1b8e3d411c</right_macro_id>
+      </tool_bar_item>
+      <tool_bar_item guid="e9e207dc-3997-4d3e-babe-963b04530613">
+        <left_macro_id>c706c1f9-358a-4362-bb2f-ebba50791989</left_macro_id>
+      </tool_bar_item>
+      <tool_bar_item guid="6051f9dc-c82c-4c27-9089-7a1d85ef00bc">
+        <left_macro_id>5b0b1d51-5770-4abd-9fd9-4d9060b85fa5</left_macro_id>
+      </tool_bar_item>
+      <tool_bar_item guid="d3f7eb73-539e-400e-a9f5-d3c001034065">
+        <left_macro_id>961874cf-8c64-4660-8d7a-455a6ee9c4d1</left_macro_id>
+      </tool_bar_item>
+    </tool_bar>
+  </tool_bars>
+  <macros>
+    <macro_item guid="c630949d-947d-4262-9b06-2b4f4d1bd7f3" bitmap_id="a430581f-5f34-4b50-a219-c9fce38923f3">
+      <text>
+        <locale_1033>Clown ID</locale_1033>
+      </text>
+      <tooltip>
+        <locale_1033>Switch the active viewport to Clown ID and back</locale_1033>
+      </tooltip>
+      <help_text>
+        <locale_1033>Switch the active viewport to Clown ID and back</locale_1033>
+      </help_text>
+      <button_text>
+        <locale_1033>Clown ID</locale_1033>
+      </button_text>
+      <menu_text>
+        <locale_1033>Clown ID</locale_1033>
+      </menu_text>
+      <script>! _ClownID</script>
+    </macro_item>
+    <macro_item guid="b8f3e1d2-6a4c-4f7e-9d1b-2c5e8a7f3b61" bitmap_id="e2d7c9a4-1b3f-4e8d-a6c5-9f0b2d4e7a18">
+      <text>
+        <locale_1033>Clown ID Capture</locale_1033>
+      </text>
+      <tooltip>
+        <locale_1033>Save the active view as a clown-pass PNG with a JSON colour key</locale_1033>
+      </tooltip>
+      <help_text>
+        <locale_1033>Save the active view as a clown-pass PNG with a JSON colour key</locale_1033>
+      </help_text>
+      <button_text>
+        <locale_1033>Clown ID Capture</locale_1033>
+      </button_text>
+      <menu_text>
+        <locale_1033>Clown ID Capture</locale_1033>
+      </menu_text>
+      <script>! _ClownIDCapture</script>
+    </macro_item>
+    <macro_item guid="6420923d-59d3-45e4-b9f5-8b50f995b552" bitmap_id="f3e936d4-a1de-4a9a-8390-f40196ea4e9c">
+      <text>
+        <locale_1033>Z Depth</locale_1033>
+      </text>
+      <tooltip>
+        <locale_1033>Switch the active viewport to Z Depth and back</locale_1033>
+      </tooltip>
+      <help_text>
+        <locale_1033>Switch the active viewport to Z Depth and back</locale_1033>
+      </help_text>
+      <button_text>
+        <locale_1033>Z Depth</locale_1033>
+      </button_text>
+      <menu_text>
+        <locale_1033>Z Depth</locale_1033>
+      </menu_text>
+      <script>! _ZDepth</script>
+    </macro_item>
+    <macro_item guid="c706c1f9-358a-4362-bb2f-ebba50791989" bitmap_id="852e9120-76a6-4cb5-a43c-b5e6f69fdde3">
+      <text>
+        <locale_1033>Z Depth Capture</locale_1033>
+      </text>
+      <tooltip>
+        <locale_1033>Save the active view as a depth map: PNG, 16-bit PNG or EXR, at any size</locale_1033>
+      </tooltip>
+      <help_text>
+        <locale_1033>Save the active view as a depth map: PNG, 16-bit PNG or EXR, at any size</locale_1033>
+      </help_text>
+      <button_text>
+        <locale_1033>Z Depth Capture</locale_1033>
+      </button_text>
+      <menu_text>
+        <locale_1033>Z Depth Capture</locale_1033>
+      </menu_text>
+      <script>! _ZDepthCapture</script>
+    </macro_item>
+    <macro_item guid="5b0b1d51-5770-4abd-9fd9-4d9060b85fa5" bitmap_id="e1ecc95a-3121-48bb-8c33-13696ba974a6">
+      <text>
+        <locale_1033>Shadow Capture</locale_1033>
+      </text>
+      <tooltip>
+        <locale_1033>Save the raw shadows of the sun or lights in the active view as a PNG mask, hard or soft, at any size</locale_1033>
+      </tooltip>
+      <help_text>
+        <locale_1033>Save the raw shadows of the sun or lights in the active view as a PNG mask, hard or soft, at any size</locale_1033>
+      </help_text>
+      <button_text>
+        <locale_1033>Shadow Capture</locale_1033>
+      </button_text>
+      <menu_text>
+        <locale_1033>Shadow Capture</locale_1033>
+      </menu_text>
+      <script>! _ShadowCapture</script>
+    </macro_item>
+    <macro_item guid="961874cf-8c64-4660-8d7a-455a6ee9c4d1" bitmap_id="72efd309-362f-489c-8c26-007487c9a10c">
+      <text>
+        <locale_1033>AO Capture</locale_1033>
+      </text>
+      <tooltip>
+        <locale_1033>Save an ambient occlusion pass of the active view: soft contact shadows in corners and creases</locale_1033>
+      </tooltip>
+      <help_text>
+        <locale_1033>Save an ambient occlusion pass of the active view: soft contact shadows in corners and creases</locale_1033>
+      </help_text>
+      <button_text>
+        <locale_1033>AO Capture</locale_1033>
+      </button_text>
+      <menu_text>
+        <locale_1033>AO Capture</locale_1033>
+      </menu_text>
+      <script>! _AOCapture</script>
+    </macro_item>
+    <macro_item guid="490f5a7d-18e8-472f-86ed-4d1b8e3d411c" bitmap_id="f3e936d4-a1de-4a9a-8390-f40196ea4e9c">
+      <text>
+        <locale_1033>Z Depth Range</locale_1033>
+      </text>
+      <tooltip>
+        <locale_1033>Set the depth range (auto or fixed near/far) and which end is white</locale_1033>
+      </tooltip>
+      <help_text>
+        <locale_1033>Set the depth range (auto or fixed near/far) and which end is white</locale_1033>
+      </help_text>
+      <button_text>
+        <locale_1033>Z Depth Range</locale_1033>
+      </button_text>
+      <menu_text>
+        <locale_1033>Z Depth Range</locale_1033>
+      </menu_text>
+      <script>! _ZDepthRange</script>
+    </macro_item>
+  </macros>
+  <bitmaps>
+    <small_bitmap item_width="16" item_height="16">
+      <bitmap_item guid="a430581f-5f34-4b50-a219-c9fce38923f3" index="0" />
+      <bitmap_item guid="e2d7c9a4-1b3f-4e8d-a6c5-9f0b2d4e7a18" index="1" />
+      <bitmap_item guid="f3e936d4-a1de-4a9a-8390-f40196ea4e9c" index="2" />
+      <bitmap_item guid="852e9120-76a6-4cb5-a43c-b5e6f69fdde3" index="3" />
+      <bitmap_item guid="e1ecc95a-3121-48bb-8c33-13696ba974a6" index="4" />
+      <bitmap_item guid="72efd309-362f-489c-8c26-007487c9a10c" index="5" />
+      <bitmap>iVBORw0KGgoAAAANSUhEUgAAAGAAAAAQCAYAAADpunr5AAAEpElEQVR42u2YW0hjRxjHxY2mJivxyiJZGwq9rK3gNboY3dAtBUWprlqUio1QQUGrQinuiyjKWqjaeNdgQWO8VEXxSbF9EJEWEd+8Wy8PXiJEvFBFwYevftPOcHI5J8etEige+EFy8v1nJvOf+b45x83NzU1yw+sbzDeASMz/aiQP+v+sJx/gLUHta4VCAVqtlhEbG2sXi/e4Maihelf372K9tXMZQWrY+fwnhvIdX2dOmrFB7rWzs2MXi/e4F2qonhsXEhICJSUlDG9v73vv38V660BdcAJAqomh8gpwuhLpALq6ukCn00FGRoZdDN7D3zCGMwA7wsPDobq6muHj43Pv/d+V/vr6Gq6urmB7exsMBgOht7cXJiYm4PT0lPyGMTb6uzMAB0jvVX70iqCQyKzbv4kRMiAyMhJqa2sZtzGA2z/d6lKp1Gn/jvSYMhBPT0/Repzgs7Mz6O/vh76+PoLJZIKTkxO4uLggYMydG4ADxS3GXTl8eozBWEd5EomOjoa6ujqGr6/vW/VfU1NDsDXQUf+O9HwpUEiPqxwN6O7uhtXVVQKacXx8DOfn5wSMsdE7N+CRTAH+8TqCRPFEVIG8jYFc1Go16PV6BhqAk5Cenk4ICBDX3m0M5FJZWUlWqMgaZMX4+DgsLy+TNEUNMBqNMDU1BTMzM7C/vw+Tk5O2un8+vPebFD5c8YJy00srAz779QuI6LdAlBEI4Ya/QP6BhncQ8pfu8OSNB9M/L/saPn6zCO9/NyloXmJiIpngoqIiaGlpYZSXl8Pi4iLJq8jS0hLZJXztBAUFQVRUFDQ3NxMKCgrIn8ZVGRgY6HQScQyYOqgBSUlJkJOTA6mpqSCTyQS1OPGdnZ3Q1tbGDMDvWANGR0dJPRgZGbmdAcldm2zyKZ/8+CfvIPyLJKQdqtf+fMF0T7/S8+pSUlIgKysLSktLyaApCwsLsLu7a8Xs7CxvO6GhoZCdnc2K4NbWFuzt7RGqqqpEpTPuKYxLQkKCoBb7Q/OGh4eZAT09PTA3N0fAetDe3i5swLdDGtjV6Rm2k0959Nhf0IBPf39KiBjYYxrllz/wDj4tLY2stLKyMmhtbWWYzWaH+Pn5OWwnLCyMFMrCwkLC5uYmWCwWQkVFBW//KpWKpB5crXwGxMXFiTIAU87Q0BCDGoDpqKOjQ9gAWyJ+sd8BYa0W3iJIDaA8m39B0o8qvxvcpXLeIpyZmQl5eXl2rK2twdHRkRXr6+u8/WP6wbRDwZPU2NgY+eNyuZy3iOLO4jMAVy2mSA8PD8EijOkRDVhZWWFg+sS0Mzg4SH47ODhwXIT5DAj5Ix0ijddWBvi/+Ib3GOildicmcBFzDMX0k5+fb0dDQwM5ReDpgZKbm8vbv1KphJiYGCvEHiPx2tjYICZwmZ6eFqXHdNfU1MSOoBRMQ/Pz83B4eMh/DOUzAFEZnkNwbgu8q+uAx8+09/IghumHpg1biouLob6+HhobGyE+Pv7eHsTodXl5SSYdd1BycjJ5lhCjx2MmmoA7gdYgZGBgQPBBjLwKCDZ5EhMcEfC95N5fRdA/6AiNRvO/fhXx8DLOxS/jHl4nu1D/N3kOgBuePjKjAAAAAElFTkSuQmCC</bitmap>
+    </small_bitmap>
+    <normal_bitmap item_width="24" item_height="24">
+      <bitmap_item guid="a430581f-5f34-4b50-a219-c9fce38923f3" index="0" />
+      <bitmap_item guid="e2d7c9a4-1b3f-4e8d-a6c5-9f0b2d4e7a18" index="1" />
+      <bitmap_item guid="f3e936d4-a1de-4a9a-8390-f40196ea4e9c" index="2" />
+      <bitmap_item guid="852e9120-76a6-4cb5-a43c-b5e6f69fdde3" index="3" />
+      <bitmap_item guid="e1ecc95a-3121-48bb-8c33-13696ba974a6" index="4" />
+      <bitmap_item guid="72efd309-362f-489c-8c26-007487c9a10c" index="5" />
+      <bitmap>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</bitmap>
+    </normal_bitmap>
+    <large_bitmap item_width="32" item_height="32">
+      <bitmap_item guid="a430581f-5f34-4b50-a219-c9fce38923f3" index="0" />
+      <bitmap_item guid="e2d7c9a4-1b3f-4e8d-a6c5-9f0b2d4e7a18" index="1" />
+      <bitmap_item guid="f3e936d4-a1de-4a9a-8390-f40196ea4e9c" index="2" />
+      <bitmap_item guid="852e9120-76a6-4cb5-a43c-b5e6f69fdde3" index="3" />
+      <bitmap_item guid="e1ecc95a-3121-48bb-8c33-13696ba974a6" index="4" />
+      <bitmap_item guid="72efd309-362f-489c-8c26-007487c9a10c" index="5" />
+      <bitmap>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</bitmap>
+    </large_bitmap>
+  </bitmaps>
+  <scripts />
+</RhinoUI>
