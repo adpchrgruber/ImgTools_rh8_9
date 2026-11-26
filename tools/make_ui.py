@@ -4,7 +4,8 @@ Generates ImgTools' UI assets (standard library only):
   resources/ImgTools.ico          plug-in icon
   dist/icon.png                   package icon
   resources/ImgTools.rui          toolbar: ClownID, ClownIDCapture, ZDepth (right-click: ZDepthRange), ZDepthCapture,
-                                  ShadowView, ShadowCapture, AOCapture
+                                  ShadowView (right-click: ImgToolsOptions), ShadowCapture,
+                                  AOView (right-click: ImgToolsOptions), AOCapture
 
 Run from the repository root:  python3 tools/make_ui.py
 GUIDs are fixed so Rhino keeps the toolbar's position and visibility across updates.
@@ -225,10 +226,13 @@ BUTTONS = [
      'Save the active view as a depth map: PNG, 16-bit PNG or EXR, at any size'),
     ('7d77c8eb-5a3b-4f71-83aa-f06a979e35ab', '110cac9f-b0b7-4761-a94f-946a2489d96c',
      '7c20c295-2615-4376-904a-c15bb5c2848c', mode(shadow_shapes), '! _ShadowView', 'Shadow View',
-     'Switch the active viewport to the live Shadows view and back'),
+     'Switch the active viewport to the live Shadows view and back (right-click: options)'),
     ('6051f9dc-c82c-4c27-9089-7a1d85ef00bc', '5b0b1d51-5770-4abd-9fd9-4d9060b85fa5',
      'e1ecc95a-3121-48bb-8c33-13696ba974a6', capture(shadow_shapes), '! _ShadowCapture', 'Shadow Capture',
      'Save the raw shadows of the sun or lights in the active view as a PNG mask, hard or soft, at any size'),
+    ('be91d8f5-e1b7-4e21-87a5-f2e94df3ae8e', 'fbfc6015-a813-4e89-bb8e-8e3a51aab881',
+     '042dc36c-4506-4604-a7d4-03f688b88bfa', mode(ao_shapes), '! _AOView', 'AO View',
+     'Switch the active viewport to the live Ambient Occlusion view and back (right-click: options)'),
     ('d3f7eb73-539e-400e-a9f5-d3c001034065', '961874cf-8c64-4660-8d7a-455a6ee9c4d1',
      '72efd309-362f-489c-8c26-007487c9a10c', capture(ao_shapes), '! _AOCapture', 'AO Capture',
      'Save an ambient occlusion pass of the active view: soft contact shadows in corners and creases'),
@@ -238,6 +242,10 @@ BUTTONS = [
 RIGHT_MACROS = [
     (2, '490f5a7d-18e8-472f-86ed-4d1b8e3d411c', '! _ZDepthRange', 'Z Depth Range',
      'Set the depth range (auto or fixed near/far) and which end is white'),
+    (4, '0b24c515-22c2-4054-80a2-81d36cc88247', '! _ImgToolsOptions', 'ImgTools Options',
+     'How the Shadows and Ambient Occlusion passes look, live and in captures'),
+    (6, '2ce90562-8fcb-456a-9121-df823a473d44', '! _ImgToolsOptions', 'ImgTools Options',
+     'How the Shadows and Ambient Occlusion passes look, live and in captures'),
 ]
 
 def text(tag, value, indent):

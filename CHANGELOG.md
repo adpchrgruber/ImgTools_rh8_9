@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0-beta — 2026-11-26
+
+- **Live Ambient Occlusion view.** `AOView` and an **AO View** toolbar button switch a viewport
+  to the new *Ambient Occlusion* display mode, traced live like the Shadows view.
+- **Options window.** Right-click the Shadow View or AO View button (or run `ImgToolsOptions`)
+  for every Shadows and AO option: light, cast/form, softness, rays, colours, AO radius,
+  anti-aliasing. Changes show at once in the live views and are used by the captures.
+  AOCapture's options are now remembered too; the AO radius is saved with the document.
+- **Faster tracing.** Packed BVH, nearest-first traversal and adaptive soft-shadow sampling:
+  soft shadows about 2× faster, AO about 12% faster, same images.
+- **Fix:** the live views showed nothing on Rhino 8 for Mac (its viewport draws bitmaps from
+  their bottom edge).
+
 ## 1.1.0-beta — 2026-11-26
 
 - **Live Shadows view.** `ShadowView` (and a toolbar button) switches a viewport to the new

@@ -163,10 +163,10 @@ namespace ImgTools
     /// </summary>
     public class AOCaptureCommand : Command
     {
-        double _radius;        // model units; 0 = not set yet (suggest from the scene)
-        int _rays = 64;
-        int _antialias = 2;
-        bool _occludedIsBlack = true;
+        // Options live in AoSettings, shared with the live AO view.
+        static int _rays { get => AoSettings.Rays; set => AoSettings.Rays = value; }
+        static int _antialias { get => AoSettings.AntiAlias; set => AoSettings.AntiAlias = value; }
+        static bool _occludedIsBlack { get => AoSettings.OccludedIsBlack; set => AoSettings.OccludedIsBlack = value; }
 
         public override string EnglishName => "AOCapture";
 
@@ -176,8 +176,7 @@ namespace ImgTools
             if (view == null || ImgToolsPlugin.Instance?.DepthConduit == null)
                 return Result.Failure;
 
-            if (_radius <= 0)
-                _radius = SuggestRadius(doc);
+            double _radius = AoSettings.Radius(doc);
             var size = view.ActiveViewport.Size;
             var width = new OptionInteger(size.Width, 16, 16384);
             var height = new OptionInteger(size.Height, 16, 16384);
@@ -201,10 +200,11 @@ namespace ImgTools
                 if (res == GetResult.Option)
                 {
                     int index = go.Option().Index;
-                    if (index == radiusIndex) _radius = radius.CurrentValue;
+                    if (index == radiusIndex) AoSettings.SetRadius(doc, _radius = radius.CurrentValue);
                     else if (index == raysIndex) _rays = rays.CurrentValue;
                     else if (index == blackIndex) _occludedIsBlack = black.CurrentValue;
                     else if (index == aaIndex) _antialias = aa.CurrentValue;
+                    doc.Views.Redraw();   // the AO view follows these options
                     continue;
                 }
                 if (res == GetResult.Nothing)
@@ -250,19 +250,6 @@ namespace ImgTools
             RhinoApp.WriteLine("Saved {0}", path);
             RhinoApp.WriteLine("Saved {0}", Path.ChangeExtension(path, ".json"));
             return Result.Success;
-        }
-
-        /// <summary>A starting radius: 5% of the size of everything shown.</summary>
-        static double SuggestRadius(RhinoDoc doc)
-        {
-            var box = doc.Objects.BoundingBoxVisible;
-            if (!box.IsValid)
-                return 1;
-            var r = 0.05 * box.Diagonal.Length;
-            // Round to 1, 2 or 5 times a power of ten.
-            double p = Math.Pow(10, Math.Floor(Math.Log10(r)));
-            double m = r / p;
-            return (m < 1.5 ? 1 : m < 3.5 ? 2 : 5) * p;
         }
     }
 

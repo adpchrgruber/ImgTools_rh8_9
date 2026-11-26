@@ -8,7 +8,7 @@ package. It combines the former **ClownID** and **ZDepth** plug-ins and adds **s
 view and size, and writes a JSON file next to the image that describes it. Written in C# /
 RhinoCommon for Mac and Windows.
 
-> **Beta (1.1.0-beta).** Tested on Rhino 9 for Mac. Built for Rhino 8 (Mac and Windows).
+> **Beta (1.2.0-beta).** Tested on Rhino 8 and 9 for Mac. Built for Rhino 8 and 9 (Mac and Windows).
 
 | Rendered | Clown ID | Z Depth |
 |---|---|---|
@@ -23,16 +23,19 @@ RhinoCommon for Mac and Windows.
 | Clown ID | `ClownID` (toggles the *Clown ID* display mode), `ClownIDCapture` | PNG, one exact flat colour per object; JSON colour → object key |
 | Z Depth | `ZDepth` (toggles the *Z Depth* display mode), `ZDepthCapture`, `ZDepthRange` | 8-bit PNG, 16-bit PNG or float EXR depth map |
 | Shadows | `ShadowView` (toggles the live *Shadows* display mode), `ShadowCapture` | 8-bit PNG shadow mask, hard or soft |
-| Ambient occlusion | `AOCapture` | 8-bit PNG AO pass |
+| Ambient occlusion | `AOView` (toggles the live *Ambient Occlusion* display mode), `AOCapture` | 8-bit PNG AO pass |
 
-All commands are on the **ImgTools** toolbar. Right-click the Z Depth button for `ZDepthRange`.
+All commands are on the **ImgTools** toolbar. Right-click the Z Depth button for `ZDepthRange`,
+and the Shadow View or AO View button for **`ImgToolsOptions`**: a small window with every
+option of the Shadows and AO passes. Changes apply at once to the live views and are used by
+`ShadowCapture` and `AOCapture`, so what you see is what you save.
 
 ## Installation
 
 Rhino 8 or 9 (Mac or Windows):
 
 - **From the Package Manager**: search for *ImgTools*.
-- **From the package file**: drag [`dist/imgtools-1.1.0-beta-rh8_0-any.yak`](dist/) into a
+- **From the package file**: drag [`dist/imgtools-1.2.0-beta-rh8_0-any.yak`](dist/) into a
   Rhino window, then restart Rhino.
 - **From the command line**, with this repository checked out:
 
@@ -66,8 +69,8 @@ the CPU, so display settings do not change it.
 
 **ShadowView** switches the active viewport to the live *Shadows* display mode; run it again
 to switch back. You can also pick *Shadows* from any viewport's display mode menu. The view
-shows exactly what `ShadowCapture` will save, with the same options: change them in
-`ShadowCapture` (then press Esc if you don't want to save) and the view updates. It is traced
+shows exactly what `ShadowCapture` will save, with the same options. Change them in the options
+window (right-click the button, or run `ImgToolsOptions`) and the view updates as you adjust. It is traced
 in the background. While you orbit it shows a quick, coarser image, and when the camera stops
 it fills in at full resolution, which takes a fraction of a second for hard shadows and about a
 second for soft ones on the test scene. Editing the model, the sun or the lights updates it.
@@ -91,6 +94,10 @@ the frame still cast shadows into it. Point, spot, rectangular and linear lights
 as point lights at their centre (made soft by `Softness`). Spot lights respect their cone.
 
 ### Ambient occlusion
+
+**AOView** switches the active viewport to the live *Ambient Occlusion* display mode, and works
+like the Shadows view: traced in the background, quick while you orbit, sharp when you stop.
+Its radius, rays and colours are in the options window and shared with `AOCapture`.
 
 **AOCapture** saves how much of the sky each visible point can see. Corners, creases and the
 ground beneath objects get soft, dark gradients, independent of any light. Multiply it over a

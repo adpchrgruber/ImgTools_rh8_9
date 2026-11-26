@@ -8,7 +8,8 @@ namespace ImgTools
     ///   Clown ID   – every object in its own flat ID colour (ClownID, ClownIDCapture)
     ///   Z Depth    – the depth pass, live and as exact maps (ZDepth, ZDepthCapture, ZDepthRange)
     ///   Shadows    – the raw cast shadows of the sun or lights, hard or soft, live and as a mask (ShadowView, ShadowCapture)
-    ///   AO         – ambient occlusion (AOCapture)
+    ///   AO         – ambient occlusion, live and as a pass (AOView, AOCapture)
+    ///   Appearance of the live views and captures: ImgToolsOptions
     ///</summary>
     public class ImgToolsPlugin : PlugIn
     {
@@ -24,7 +25,9 @@ namespace ImgTools
 
         internal ZDepthConduit DepthConduit { get; private set; }
 
-        internal ShadowPreviewConduit ShadowConduit { get; private set; }
+        internal TracePreviewConduit ShadowConduit { get; private set; }
+
+        internal TracePreviewConduit AoConduit { get; private set; }
 
         // Load with Rhino so the display modes are never selected without their conduits behind them.
         public override PlugInLoadTime LoadTime => PlugInLoadTime.AtStartup;
@@ -44,15 +47,17 @@ namespace ImgTools
                 return LoadReturnCode.ErrorShowDialog;
             }
 
-            var shadows = ShadowDisplayMode.Ensure();
-            if (shadows == null)
+            var shadows = TraceDisplayModes.Shadows();
+            var ao = TraceDisplayModes.Ao();
+            if (shadows == null || ao == null)
             {
-                errorMessage = "Could not create the \"" + ShadowDisplayMode.Name + "\" display mode.";
+                errorMessage = "Could not create the \"" + TraceDisplayModes.ShadowsName + "\" and \"" + TraceDisplayModes.AoName + "\" display modes.";
                 return LoadReturnCode.ErrorShowDialog;
             }
 
             ClownConduit = new ClownIdConduit(clown.Id) { Enabled = true };
-            ShadowConduit = new ShadowPreviewConduit(shadows.Id) { Enabled = true };
+            ShadowConduit = new TracePreviewConduit(shadows.Id, TracePass.Shadows) { Enabled = true };
+            AoConduit = new TracePreviewConduit(ao.Id, TracePass.AmbientOcclusion) { Enabled = true };
 
             DepthConduit = new ZDepthConduit(depth.Id) { Enabled = true };
             RhinoDoc.DeleteRhinoObject += (s, e) => DepthConduit.Forget(e.TheObject.RuntimeSerialNumber);
@@ -71,6 +76,8 @@ namespace ImgTools
                 DepthConduit.Enabled = false;
             if (ShadowConduit != null)
                 ShadowConduit.Enabled = false;
+            if (AoConduit != null)
+                AoConduit.Enabled = false;
         }
     }
 }

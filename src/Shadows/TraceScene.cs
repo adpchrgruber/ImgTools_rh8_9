@@ -253,6 +253,22 @@ namespace ImgTools
         /// </summary>
         public static Vector3d Around(Vector3d axis, double u1, double u2, double cosMax, bool cosine)
         {
+            Basis(axis, out var u, out var v);
+            return Around(axis, u, v, u1, u2, cosMax, cosine);
+        }
+
+        /// <summary>Two unit vectors that make an orthonormal frame with the axis.</summary>
+        public static void Basis(Vector3d axis, out Vector3d u, out Vector3d v)
+        {
+            var a = Math.Abs(axis.X) > 0.9 ? Vector3d.YAxis : Vector3d.XAxis;
+            u = Vector3d.CrossProduct(a, axis);
+            u.Unitize();
+            v = Vector3d.CrossProduct(axis, u);
+        }
+
+        /// <summary>As <see cref="Around(Vector3d, double, double, double, bool)"/>, with the frame computed once by the caller.</summary>
+        public static Vector3d Around(Vector3d axis, Vector3d u, Vector3d v, double u1, double u2, double cosMax, bool cosine)
+        {
             double z, r;
             if (cosine)
             {
@@ -265,11 +281,6 @@ namespace ImgTools
                 r = Math.Sqrt(Math.Max(0, 1 - z * z));
             }
             double phi = 2 * Math.PI * u2;
-            // Basis around the axis.
-            var a = Math.Abs(axis.X) > 0.9 ? Vector3d.YAxis : Vector3d.XAxis;
-            var u = Vector3d.CrossProduct(a, axis);
-            u.Unitize();
-            var v = Vector3d.CrossProduct(axis, u);
             return r * Math.Cos(phi) * u + r * Math.Sin(phi) * v + z * axis;
         }
     }

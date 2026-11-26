@@ -25,6 +25,31 @@ namespace ImgTools
     /// </remarks>
     internal static class ShadowRender
     {
+        /// <summary>Of grid×grid stratified rays across the light's disc, how many do not reach it.</summary>
+        static int Blocked(ShadowBvh bvh, in SurfaceHit hit, Vector3d start, Vector3d l, int grid, ref Rng rng,
+            double cosMax, bool formShadows, double eps, double tMax, int[] stack)
+        {
+            int blocked = 0;
+            Rng.Basis(l, out var bu, out var bv);
+            for (int gy = 0; gy < grid; gy++)
+            {
+                for (int gx = 0; gx < grid; gx++)
+                {
+                    var d = Rng.Around(l, bu, bv, (gx + rng.NextDouble()) / grid, (gy + rng.NextDouble()) / grid, cosMax, false);
+                    // Part of the light below the surface: lit only in the cast-only sense.
+                    if (hit.Smooth * d <= 0)
+                    {
+                        if (formShadows)
+                            blocked++;
+                        continue;
+                    }
+                    if (hit.Normal * d > 0 && bvh.Any(start, d, eps, tMax, ShadowBvh.Role.Casts, stack))
+                        blocked++;
+                }
+            }
+            return blocked;
+        }
+
         /// <param name="softness">Angular diameter of the lights in degrees; 0 for hard shadows.</param>
         /// <param name="rays">Shadow rays per pixel per light when soft (spread over the anti-alias samples).</param>
         public static TraceImage Render(TraceScene scene, int samples, IList<ShadowLight> lights, bool formShadows,
@@ -69,23 +94,19 @@ namespace ImgTools
                             dark++;
                         continue;
                     }
-                    int blocked = 0;
-                    for (int gy = 0; gy < grid; gy++)
+                    // A light seen through the same point by every ray: lit, or in full shadow.
+                    // Four pilot rays across the light's quadrants tell; only points where they
+                    // disagree (the penumbra) get the full set. Most of an image is not penumbra.
+                    if (perSample >= 9)
                     {
-                        for (int gx = 0; gx < grid; gx++)
+                        int pilot = Blocked(bvh, hit, start, l, 2, ref rng, cosMax, formShadows, eps, tMax, stack);
+                        if (pilot == 0 || pilot == 4)
                         {
-                            var d = Rng.Around(l, (gx + rng.NextDouble()) / grid, (gy + rng.NextDouble()) / grid, cosMax, false);
-                            // Part of the light below the surface: lit only in the cast-only sense.
-                            if (hit.Smooth * d <= 0)
-                            {
-                                if (formShadows)
-                                    blocked++;
-                                continue;
-                            }
-                            if (hit.Normal * d > 0 && bvh.Any(start, d, eps, tMax, ShadowBvh.Role.Casts, stack))
-                                blocked++;
+                            dark += pilot / 4.0;
+                            continue;
                         }
                     }
+                    int blocked = Blocked(bvh, hit, start, l, grid, ref rng, cosMax, formShadows, eps, tMax, stack);
                     dark += (double)blocked / perSample;
                 }
                 return lights.Count == 0 ? 0 : dark / lights.Count;
@@ -114,7 +135,7 @@ namespace ImgTools
     /// </summary>
     internal static class AoRender
     {
-        public static TraceImage Render(TraceScene scene, int samples, double radius, int rays)
+        public static TraceImage Render(TraceScene scene, int samples, double radius, int rays, Func<bool> cancelled = null)
         {
             var bvh = scene.Bvh;
             double eps = scene.Eps;
@@ -127,11 +148,12 @@ namespace ImgTools
             {
                 var start = scene.RayStart(hit);
                 double occlusion = 0;
+                Rng.Basis(hit.Smooth, out var bu, out var bv);
                 for (int gy = 0; gy < grid; gy++)
                 {
                     for (int gx = 0; gx < grid; gx++)
                     {
-                        var d = Rng.Around(hit.Smooth, (gx + rng.NextDouble()) / grid, (gy + rng.NextDouble()) / grid, 0, true);
+                        var d = Rng.Around(hit.Smooth, bu, bv, (gx + rng.NextDouble()) / grid, (gy + rng.NextDouble()) / grid, 0, true);
                         // Directions under the flat facet would hit the facet itself: mirror them up.
                         double below = hit.Normal * d;
                         if (below <= 0)
@@ -142,7 +164,9 @@ namespace ImgTools
                     }
                 }
                 return 1 - occlusion / perSample;
-            }, out var coverage);
+            }, out var coverage, cancelled);
+            if (values == null)
+                return null;
 
             return new TraceImage
             {

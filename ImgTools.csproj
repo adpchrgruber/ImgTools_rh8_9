@@ -16,11 +16,11 @@
 
   <PropertyGroup>
     <!-- Specifies information for Assembly and Yak -->
-    <Version>1.1.0-beta</Version>
+    <Version>1.2.0-beta</Version>
     <Title>ImgTools</Title>
     <Authors>adpchrgruber</Authors>
     <Company>adpchrgruber</Company>
-    <Description>Image passes for compositing your renders: Clown ID (flat object-ID colours), Z Depth (live depth view and exact PNG/16-bit PNG/EXR depth maps), Shadows (the raw cast shadows of the sun or lights, hard or soft, live and as a mask) and Ambient Occlusion. Replaces ClownID and ZDepth. Works on Mac and Windows.</Description>
+    <Description>Image passes for compositing your renders: Clown ID (flat object-ID colours), Z Depth (live depth view and exact PNG/16-bit PNG/EXR depth maps), Shadows (the raw cast shadows of the sun or lights, hard or soft, live and as a mask) and Ambient Occlusion (live and as a pass). Replaces ClownID and ZDepth. Works on Mac and Windows.</Description>
     <RepositoryUrl>https://github.com/adpchrgruber/ImgTools_rh8_9</RepositoryUrl>
   </PropertyGroup>
 

@@ -16,10 +16,19 @@ namespace ImgTools
             WritePng(path, width, height, 8, pixels);
         }
 
-        /// <summary>Greyscale PNG into a stream, compressed fast (for previews).</summary>
-        public static void WritePng8(Stream stream, int width, int height, byte[] pixels)
+        /// <summary>
+        /// Grey levels as an opaque RGBA PNG into a stream, compressed fast. For the live views:
+        /// Rhino 8 does not draw greyscale bitmaps in the viewport, RGBA it does.
+        /// </summary>
+        public static void WritePngRgba(Stream stream, int width, int height, byte[] grey)
         {
-            WritePng(stream, width, height, 8, pixels, CompressionLevel.Fastest);
+            var rgba = new byte[grey.Length * 4];
+            for (int i = 0, k = 0; i < grey.Length; i++, k += 4)
+            {
+                rgba[k] = rgba[k + 1] = rgba[k + 2] = grey[i];
+                rgba[k + 3] = 255;
+            }
+            WritePng(stream, width, height, 8, rgba, CompressionLevel.Fastest, colorType: 6);
         }
 
         public static void WritePng16(string path, int width, int height, ushort[] pixels)
@@ -91,9 +100,11 @@ namespace ImgTools
                 WritePng(stream, width, height, bitDepth, samples, CompressionLevel.Optimal);
         }
 
-        static void WritePng(Stream stream, int width, int height, int bitDepth, byte[] samples, CompressionLevel level)
+        /// <param name="colorType">0 greyscale, 6 RGBA (8-bit samples).</param>
+        static void WritePng(Stream stream, int width, int height, int bitDepth, byte[] samples, CompressionLevel level, int colorType = 0)
         {
-            int rowBytes = width * bitDepth / 8;
+            int channels = colorType == 6 ? 4 : 1;
+            int rowBytes = width * channels * bitDepth / 8;
             byte[] compressed;
             using (var zlib = new MemoryStream())
             {
@@ -127,7 +138,7 @@ namespace ImgTools
                 WriteBigEndian(header, (uint)width);
                 WriteBigEndian(header, (uint)height);
                 header.WriteByte((byte)bitDepth);
-                header.WriteByte(0);    // greyscale
+                header.WriteByte((byte)colorType);   // 0 greyscale, 6 RGBA
                 header.WriteByte(0);    // deflate
                 header.WriteByte(0);    // adaptive filtering
                 header.WriteByte(0);    // no interlace

@@ -12,23 +12,66 @@ using Rhino.Geometry;
 
 namespace ImgTools
 {
+    /// <summary>The traced passes that have a live view.</summary>
+    internal enum TracePass
+    {
+        Shadows,
+        AmbientOcclusion,
+    }
+
     /// <summary>
-    /// The live Shadows view. In viewports using the "Shadows" display mode it hides Rhino's
-    /// own drawing and shows the shadow pass instead, traced in the background with the same
-    /// code and options as ShadowCapture: first a quick low-resolution pass, then the full one.
-    /// Tracing restarts when the camera, the scene, the lights or the options change; a stale
-    /// trace is cancelled.
+    /// The scene's triangles for the live views, shared by them and rebuilt (the BVH in the
+    /// background) when the document changes.
     /// </summary>
-    internal sealed class ShadowPreviewConduit : DisplayConduit
+    internal static class PreviewScene
+    {
+        static int _version;
+        static int _builtVersion = -1;
+        static Task<ShadowBvh> _bvh;
+        static bool _hooked;
+
+        public static int Version => _version;
+
+        public static void Hook()
+        {
+            if (_hooked)
+                return;
+            _hooked = true;
+            EventHandler<Rhino.DocObjects.RhinoObjectEventArgs> changed = (s, e) => _version++;
+            RhinoDoc.AddRhinoObject += changed;
+            RhinoDoc.DeleteRhinoObject += changed;
+            RhinoDoc.UndeleteRhinoObject += changed;
+            RhinoDoc.ModifyObjectAttributes += (s, e) => _version++;       // shown/hidden, casts/receives shadows
+            RhinoDoc.LayerTableEvent += (s, e) => _version++;              // layer on/off
+            RhinoDoc.InstanceDefinitionTableEvent += (s, e) => _version++; // block edits
+            RhinoDoc.DocumentPropertiesChanged += (s, e) => _version++;    // render mesh quality
+            RhinoDoc.EndOpenDocument += (s, e) => _version++;
+            RhinoDoc.CloseDocument += (s, e) => _version++;
+        }
+
+        /// <summary>The current scene's BVH; collects meshes (UI thread) when the document changed.</summary>
+        public static Task<ShadowBvh> Get(RhinoDoc doc)
+        {
+            if (_builtVersion != _version || _bvh == null)
+            {
+                var items = TraceScene.CollectItems(doc, null, out _, out _);
+                _bvh = Task.Run(() => new ShadowBvh(items));
+                _builtVersion = _version;
+            }
+            return _bvh;
+        }
+    }
+
+    /// <summary>
+    /// A live traced view. In viewports using its display mode it hides Rhino's own drawing and
+    /// shows the pass instead, traced in the background with the same code and options as the
+    /// capture command: first a quick low-resolution image, then the full one. Tracing restarts
+    /// when the camera, the scene, the lights or the options change; a stale trace is cancelled.
+    /// </summary>
+    internal sealed class TracePreviewConduit : DisplayConduit
     {
         readonly Guid _modeId;
-
-        // The scene's triangles, rebuilt (BVH in the background) when the document changes.
-        int _version;
-        int _builtVersion = -1;
-        Task<ShadowBvh> _bvh;
-        int _casters, _receivers;
-
+        readonly TracePass _pass;
         readonly Dictionary<Guid, ViewState> _views = new Dictionary<Guid, ViewState>();
 
         sealed class ViewState
@@ -40,34 +83,32 @@ namespace ImgTools
             public CancellationTokenSource Cancel;
         }
 
-        public ShadowPreviewConduit(Guid modeId)
+        public TracePreviewConduit(Guid modeId, TracePass pass)
         {
             _modeId = modeId;
-            EventHandler<Rhino.DocObjects.RhinoObjectEventArgs> changed = (s, e) => Invalidate();
-            RhinoDoc.AddRhinoObject += changed;
-            RhinoDoc.DeleteRhinoObject += changed;
-            RhinoDoc.UndeleteRhinoObject += changed;
-            RhinoDoc.ModifyObjectAttributes += (s, e) => Invalidate();       // shown/hidden, casts/receives shadows
-            RhinoDoc.LayerTableEvent += (s, e) => Invalidate();              // layer on/off
-            RhinoDoc.InstanceDefinitionTableEvent += (s, e) => Invalidate(); // block edits
-            RhinoDoc.DocumentPropertiesChanged += (s, e) => Invalidate();    // render mesh quality
-            RhinoDoc.EndOpenDocument += (s, e) => Invalidate();
-            RhinoDoc.CloseDocument += (s, e) => { Invalidate(); ClearViews(); };
+            _pass = pass;
+            PreviewScene.Hook();
+            RhinoDoc.CloseDocument += (s, e) => ClearViews();
         }
 
-        void Invalidate() => _version++;
+        string Label => _pass == TracePass.Shadows ? "Shadows" : "AO";
 
         bool IsActive(RhinoViewport viewport) => viewport.DisplayMode?.Id == _modeId;
 
         // A capture's probe (ZDepth conduit) owns the frame; draw nothing then.
         static bool Probing => ImgToolsPlugin.Instance?.DepthConduit?.Probe != null;
 
+        /// <summary>Colour where there is no surface: "no shadow" / "open sky".</summary>
+        Color Background => _pass == TracePass.Shadows
+            ? (ShadowSettings.ShadowIsWhite ? Color.Black : Color.White)
+            : (AoSettings.OccludedIsBlack ? Color.White : Color.Black);
+
         protected override void PreDrawObjects(DrawEventArgs e)
         {
             if (Probing || !IsActive(e.Viewport))
                 return;
-            // Background = "no shadow". Rhino does not reliably apply the mode's solid fill in every view.
-            var background = ShadowSettings.ShadowIsWhite ? Color.Black : Color.White;
+            // Rhino does not reliably apply the mode's solid fill in every view.
+            var background = Background;
             var b = e.Viewport.Bounds;
             e.Display.Draw2dRectangle(new Rectangle(-2, -2, b.Width + 4, b.Height + 4), background, 0, background);
         }
@@ -92,26 +133,37 @@ namespace ImgTools
             if (!_views.TryGetValue(viewport.Id, out var state))
                 _views[viewport.Id] = state = new ViewState();
 
-            var lights = ShadowLights.Collect(doc, ShadowSettings.Source, out var problem);
+            string problem = null;
+            var lights = _pass == TracePass.Shadows
+                ? ShadowLights.Collect(doc, ShadowSettings.Source, out problem)
+                : new List<ShadowLight>();
+            bool ready = _pass != TracePass.Shadows || lights.Count > 0;
             var camera = DepthCamera.FromViewport(viewport, size.Width, size.Height);
-            string key = Key(camera, lights);
+            string key = Key(doc, camera, lights);
 
-            bool upToDate = state.BitmapKey == key && state.Final;
-            if (!upToDate && state.JobKey != key)
+            if (ready && !(state.BitmapKey == key && state.Final) && state.JobKey != key)
                 Start(doc, viewport, state, camera, lights, key);
 
             if (state.Bitmap != null)
-                e.Display.DrawBitmap(state.Bitmap, 0, 0);
+                e.Display.DrawBitmap(state.Bitmap, 0, BitmapTop(size.Height));
 
-            string status = lights.Count == 0 ? problem
-                : state.BitmapKey != key || !state.Final ? "Shadows: tracing…"
+            string status = !ready ? problem
+                : state.BitmapKey != key || !state.Final ? Label + ": tracing…"
                 : null;
             if (status != null)
-                e.Display.Draw2dText(status, ShadowSettings.ShadowIsWhite ? Color.Gray : Color.DimGray, new Point2d(12, size.Height - 14), false, 12);
+                e.Display.Draw2dText(status, Color.Gray, new Point2d(12, size.Height - 14), false, 12);
         }
 
+        /// <summary>
+        /// The y to pass to DrawBitmap for an image covering the viewport. Rhino 8 for Mac takes
+        /// it as the image's bottom edge (Rhino 9 and Windows: the top edge).
+        /// </summary>
+        static int BitmapTop(int height) => BottomOrigin ? height : 0;
+
+        static readonly bool BottomOrigin = RhinoApp.ExeVersion < 9 && Rhino.Runtime.HostUtils.RunningOnOSX;
+
         /// <summary>Everything the image depends on.</summary>
-        string Key(DepthCamera c, List<ShadowLight> lights)
+        string Key(RhinoDoc doc, DepthCamera c, List<ShadowLight> lights)
         {
             var sb = new StringBuilder();
             // Nine significant digits: Rhino's offscreen copies of a viewport (screenshots,
@@ -121,15 +173,23 @@ namespace ImgTools
             N(c.Direction.X); N(c.Direction.Y); N(c.Direction.Z);
             N(c.Y.X); N(c.Y.Y); N(c.Y.Z);
             N(c.Left); N(c.Right); N(c.Bottom); N(c.Top); N(c.Near); N(c.Far);
-            sb.Append(c.Parallel).Append(c.Width).Append('x').Append(c.Height).Append('|');
-            foreach (var l in lights)
+            sb.Append(c.Parallel).Append(c.Width).Append('x').Append(c.Height).Append('|').Append(PreviewScene.Version).Append('|');
+            if (_pass == TracePass.Shadows)
             {
-                N(l.ToLight.X); N(l.ToLight.Y); N(l.ToLight.Z);
-                N(l.Position.X); N(l.Position.Y); N(l.Position.Z);
+                foreach (var l in lights)
+                {
+                    N(l.ToLight.X); N(l.ToLight.Y); N(l.ToLight.Z);
+                    N(l.Position.X); N(l.Position.Y); N(l.Position.Z);
+                }
+                sb.Append(ShadowSettings.FormShadows).Append(';');
+                N(ShadowSettings.Softness);
+                sb.Append(ShadowSettings.Rays).Append(ShadowSettings.ShadowIsWhite);
             }
-            sb.Append('|').Append(_version).Append('|')
-              .Append(ShadowSettings.FormShadows).Append(ShadowSettings.Softness).Append(';')
-              .Append(ShadowSettings.Rays).Append(ShadowSettings.ShadowIsWhite);
+            else
+            {
+                N(AoSettings.Radius(doc));
+                sb.Append(AoSettings.Rays).Append(AoSettings.OccludedIsBlack);
+            }
             return sb.ToString();
         }
 
@@ -137,24 +197,21 @@ namespace ImgTools
         {
             state.Cancel?.Cancel();
             state.JobKey = key;
-            if (lights.Count == 0)
-                return;
 
             // Meshes are read here, on the UI thread; the BVH is built in the background.
-            if (_builtVersion != _version || _bvh == null)
-            {
-                var items = TraceScene.CollectItems(doc, null, out _casters, out _receivers);
-                _bvh = Task.Run(() => new ShadowBvh(items));
-                _builtVersion = _version;
-            }
-            var bvhTask = _bvh;
+            var bvhTask = PreviewScene.Get(doc);
             var clipPlanes = DepthCapture.WorldClippingPlanes(doc, viewport);
             var cancel = new CancellationTokenSource();
             state.Cancel = cancel;
             bool quick = state.BitmapKey != key;   // nothing for this view yet: show a fast pass first
-            bool form = ShadowSettings.FormShadows, white = ShadowSettings.ShadowIsWhite;
+            var pass = _pass;
+            bool form = ShadowSettings.FormShadows;
             double softness = ShadowSettings.Softness;
-            int rays = ShadowSettings.Rays;
+            int shadowRays = ShadowSettings.Rays;
+            double radius = AoSettings.Radius(doc);
+            int aoRays = AoSettings.Rays;
+            // Grey = value, or 1 - value: shadow white / occlusion black are the defaults.
+            bool invert = pass == TracePass.Shadows ? !ShadowSettings.ShadowIsWhite : !AoSettings.OccludedIsBlack;
             var viewportId = viewport.Id;
             uint docSerial = doc.RuntimeSerialNumber;
 
@@ -167,24 +224,27 @@ namespace ImgTools
                 var clips = Array.ConvertAll(clipPlanes.ToArray(), p => (n: p.Normal, d: (origin - p.Origin) * p.Normal));
                 Func<bool> cancelled = () => cancel.IsCancellationRequested;
 
+                TraceImage Render(DepthCamera cam, bool fast)
+                {
+                    var scene = new TraceScene { Camera = cam, Bvh = bvh, Clips = clips, Eps = 1e-6 * bvh.Size };
+                    return pass == TracePass.Shadows
+                        ? ShadowRender.Render(scene, 1, lights, form, softness, fast ? Math.Min(shadowRays, 4) : shadowRays, cancelled)
+                        : AoRender.Render(scene, 1, radius, fast ? Math.Min(aoRays, 9) : aoRays, cancelled);
+                }
+
                 if (quick)
                 {
                     // About a ninth of the pixels and few rays: there within a frame or two.
                     int f = 3;
-                    var small = Scaled(camera, Math.Max(2, camera.Width / f), Math.Max(2, camera.Height / f));
-                    var scene = new TraceScene { Camera = small, Bvh = bvh, Clips = clips, Eps = 1e-6 * bvh.Size };
-                    var image = ShadowRender.Render(scene, 1, lights, form, softness, Math.Min(rays, 4), cancelled);
+                    var image = Render(Scaled(camera, Math.Max(2, camera.Width / f), Math.Max(2, camera.Height / f)), true);
                     if (image == null)
                         return;
-                    Publish(docSerial, viewportId, key, false, Png(Upscale(image, camera.Width, camera.Height), camera.Width, camera.Height, white), cancel);
+                    Publish(docSerial, viewportId, key, false, Png(Upscale(image, camera.Width, camera.Height), camera.Width, camera.Height, invert), cancel);
                 }
-                {
-                    var scene = new TraceScene { Camera = camera, Bvh = bvh, Clips = clips, Eps = 1e-6 * bvh.Size };
-                    var image = ShadowRender.Render(scene, 1, lights, form, softness, rays, cancelled);
-                    if (image == null)
-                        return;
-                    Publish(docSerial, viewportId, key, true, Png(image.Value, camera.Width, camera.Height, white), cancel);
-                }
+                var full = Render(camera, false);
+                if (full == null)
+                    return;
+                Publish(docSerial, viewportId, key, true, Png(full.Value, camera.Width, camera.Height, invert), cancel);
             });
         }
 
@@ -208,17 +268,17 @@ namespace ImgTools
             return result;
         }
 
-        static byte[] Png(float[] values, int width, int height, bool shadowIsWhite)
+        static byte[] Png(float[] values, int width, int height, bool invert)
         {
             var pixels = new byte[values.Length];
             for (int i = 0; i < pixels.Length; i++)
             {
-                double v = shadowIsWhite ? values[i] : 1 - values[i];
+                double v = invert ? 1 - values[i] : values[i];
                 pixels[i] = (byte)Math.Round(255 * (v < 0 ? 0 : v > 1 ? 1 : v));
             }
             using (var stream = new MemoryStream())
             {
-                ImageWriters.WritePng8(stream, width, height, pixels);
+                ImageWriters.WritePngRgba(stream, width, height, pixels);
                 return stream.ToArray();
             }
         }
@@ -239,7 +299,7 @@ namespace ImgTools
                 }
                 catch (Exception e)
                 {
-                    RhinoApp.WriteLine("Shadows view: could not show the image: " + e.Message);
+                    RhinoApp.WriteLine(Label + " view: could not show the image: " + e.Message);
                     return;
                 }
                 state.Bitmap?.Dispose();
@@ -249,8 +309,7 @@ namespace ImgTools
                 if (final)
                     state.JobKey = null;
                 var doc = RhinoDoc.FromRuntimeSerialNumber(docSerial);
-                var view = doc?.Views.Find(viewportId);
-                view?.Redraw();
+                doc?.Views.Find(viewportId)?.Redraw();
             }));
         }
 

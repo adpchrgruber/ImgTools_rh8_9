@@ -24,16 +24,27 @@ namespace ImgTools
         public readonly Point3d Origin;
         public readonly double Size;    // scene bounding box diagonal
 
-        // Per triangle: v0, edge1, edge2 (9 floats) and its role.
-        readonly float[] _tri;
-        readonly float[] _normal;   // per triangle: the three vertex normals (9 floats), world space
-        readonly Role[] _role;
+        // Per triangle, in tree order (each leaf's triangles are contiguous):
+        // v0, edge1, edge2 (9 floats) and its role.
+        float[] _tri;
+        float[] _normal;   // per triangle: the three vertex normals (9 floats), world space
+        Role[] _role;
 
-        // Nodes: bounds (6 floats); leaf: start/count into _order; inner: left child (right = left + 1).
-        readonly float[] _bounds;
-        readonly int[] _first, _count;
-        readonly int[] _order;
+        // While building: bounds (6 floats); leaf: start/count into _order; inner: left child (right = left + 1).
+        float[] _bounds;
+        int[] _first, _count;
+        int[] _order;
         int _nodes, _depth;
+
+        /// <summary>A node, 32 bytes: half a cache line, read in one go during traversal.</summary>
+        struct Node
+        {
+            public float X0, Y0, Z0, X1, Y1, Z1;
+            public int First;   // leaf: first triangle; inner: left child (right = First + 1)
+            public int Count;   // leaf: triangle count; inner: 0
+        }
+
+        Node[] _node = new Node[0];
 
         public int TriangleCount => _role.Length;
 
@@ -116,7 +127,45 @@ namespace ImgTools
             _count = new int[maxNodes];
             _nodes = 1;
             if (total > 0)
+            {
                 Build(0, 0, total, centroid, 1);
+                Pack();
+            }
+        }
+
+        /// <summary>
+        /// Packs the nodes into one struct array and puts the triangles in tree order, so a
+        /// traversal reads memory front to back instead of jumping through an index.
+        /// </summary>
+        void Pack()
+        {
+            _node = new Node[_nodes];
+            for (int i = 0; i < _nodes; i++)
+            {
+                int b = 6 * i;
+                _node[i] = new Node
+                {
+                    X0 = _bounds[b], Y0 = _bounds[b + 1], Z0 = _bounds[b + 2],
+                    X1 = _bounds[b + 3], Y1 = _bounds[b + 4], Z1 = _bounds[b + 5],
+                    First = _first[i], Count = _count[i],
+                };
+            }
+            int total = _order.Length;
+            var tri = new float[_tri.Length];
+            var normal = new float[_normal.Length];
+            var role = new Role[total];
+            for (int i = 0; i < total; i++)
+            {
+                int f = _order[i];
+                Array.Copy(_tri, 9 * f, tri, 9 * i, 9);
+                Array.Copy(_normal, 9 * f, normal, 9 * i, 9);
+                role[i] = _role[f];
+            }
+            _tri = tri;
+            _normal = normal;
+            _role = role;
+            _bounds = null;
+            _first = _count = _order = null;
         }
 
         /// <summary>Unit triangle normal (not oriented).</summary>
@@ -336,47 +385,74 @@ namespace ImgTools
         /// <summary>
         /// Nearest hit with distance in (tMin, tMax) on a triangle with any of the roles.
         /// The ray origin is relative to <see cref="Origin"/>; the direction need not be unit.
-        /// Returns the triangle, or -1.
+        /// Returns the triangle, or -1. Visits the nearer child first and skips any node that
+        /// starts behind the best hit so far.
         /// </summary>
         public int Nearest(Vector3d origin, Vector3d direction, double tMin, double tMax, Role mask, int[] stack, out double t)
         {
             t = tMax;
-            int hit = -1;
             if (TriangleCount == 0)
                 return -1;
+            var nodes = _node;
             float ox = (float)origin.X, oy = (float)origin.Y, oz = (float)origin.Z;
             float dx = (float)direction.X, dy = (float)direction.Y, dz = (float)direction.Z;
             float ix = 1f / dx, iy = 1f / dy, iz = 1f / dz;
             float best = (float)tMax, min = (float)tMin;
-            int sp = 0;
-            stack[sp++] = 0;
-            while (sp > 0)
+            int hit = -1;
+            if (!Box(in nodes[0], ox, oy, oz, ix, iy, iz, min, best, out _))
+                return -1;
+            int sp = 0, node = 0;
+            while (true)
             {
-                int node = stack[--sp];
-                if (!HitsBox(node, ox, oy, oz, ix, iy, iz, min, best))
-                    continue;
-                int count = _count[node];
-                if (count == 0)
+                ref readonly var n = ref nodes[node];
+                if (n.Count > 0)
                 {
-                    stack[sp++] = _first[node] + 1;
-                    stack[sp++] = _first[node];
-                    continue;
-                }
-                for (int i = _first[node], end = i + count; i < end; i++)
-                {
-                    int f = _order[i];
-                    if ((_role[f] & mask) == 0)
-                        continue;
-                    float d = Intersect(f, ox, oy, oz, dx, dy, dz);
-                    if (d > min && d < best)
+                    for (int f = n.First, end = f + n.Count; f < end; f++)
                     {
-                        best = d;
-                        hit = f;
+                        if ((_role[f] & mask) == 0)
+                            continue;
+                        float d = Intersect(f, ox, oy, oz, dx, dy, dz);
+                        if (d > min && d < best)
+                        {
+                            best = d;
+                            hit = f;
+                        }
                     }
                 }
+                else
+                {
+                    int left = n.First;
+                    bool hl = Box(in nodes[left], ox, oy, oz, ix, iy, iz, min, best, out float tl);
+                    bool hr = Box(in nodes[left + 1], ox, oy, oz, ix, iy, iz, min, best, out float tr);
+                    if (hl && hr)
+                    {
+                        // Near child now, far child later (with its entry distance).
+                        int far = tl <= tr ? left + 1 : left;
+                        stack[sp++] = far;
+                        stack[sp++] = Bits(tl <= tr ? tr : tl);
+                        node = tl <= tr ? left : left + 1;
+                        continue;
+                    }
+                    if (hl || hr)
+                    {
+                        node = hl ? left : left + 1;
+                        continue;
+                    }
+                }
+                // Next node on the stack that still starts before the best hit.
+                while (true)
+                {
+                    if (sp == 0)
+                    {
+                        t = best;
+                        return hit;
+                    }
+                    float entry = Float(stack[--sp]);
+                    node = stack[--sp];
+                    if (entry <= best * 1.00001f + 1e-6f)
+                        break;
+                }
             }
-            t = best;
-            return hit;
         }
 
         /// <summary>True when any triangle with the roles lies on the ray within (tMin, tMax).</summary>
@@ -384,48 +460,62 @@ namespace ImgTools
         {
             if (TriangleCount == 0)
                 return false;
+            var nodes = _node;
             float ox = (float)origin.X, oy = (float)origin.Y, oz = (float)origin.Z;
             float dx = (float)direction.X, dy = (float)direction.Y, dz = (float)direction.Z;
             float ix = 1f / dx, iy = 1f / dy, iz = 1f / dz;
             float max = (float)tMax, min = (float)tMin;
-            int sp = 0;
-            stack[sp++] = 0;
-            while (sp > 0)
+            if (!Box(in nodes[0], ox, oy, oz, ix, iy, iz, min, max, out _))
+                return false;
+            int sp = 0, node = 0;
+            while (true)
             {
-                int node = stack[--sp];
-                if (!HitsBox(node, ox, oy, oz, ix, iy, iz, min, max))
-                    continue;
-                int count = _count[node];
-                if (count == 0)
+                ref readonly var n = ref nodes[node];
+                if (n.Count > 0)
                 {
-                    stack[sp++] = _first[node] + 1;
-                    stack[sp++] = _first[node];
-                    continue;
+                    for (int f = n.First, end = f + n.Count; f < end; f++)
+                    {
+                        if ((_role[f] & mask) == 0)
+                            continue;
+                        float d = Intersect(f, ox, oy, oz, dx, dy, dz);
+                        if (d > min && d < max)
+                            return true;
+                    }
                 }
-                for (int i = _first[node], end = i + count; i < end; i++)
+                else
                 {
-                    int f = _order[i];
-                    if ((_role[f] & mask) == 0)
+                    int left = n.First;
+                    bool hl = Box(in nodes[left], ox, oy, oz, ix, iy, iz, min, max, out _);
+                    bool hr = Box(in nodes[left + 1], ox, oy, oz, ix, iy, iz, min, max, out _);
+                    if (hl && hr)
+                    {
+                        stack[sp++] = left + 1;
+                        node = left;
                         continue;
-                    float d = Intersect(f, ox, oy, oz, dx, dy, dz);
-                    if (d > min && d < max)
-                        return true;
+                    }
+                    if (hl || hr)
+                    {
+                        node = hl ? left : left + 1;
+                        continue;
+                    }
                 }
+                if (sp == 0)
+                    return false;
+                node = stack[--sp];
             }
-            return false;
         }
 
-        /// <summary>Stack size large enough for this tree.</summary>
-        public int StackSize => _depth + 8;
+        /// <summary>Stack size large enough for this tree (two entries per level for Nearest).</summary>
+        public int StackSize => 2 * (_depth + 8);
 
-        bool HitsBox(int node, float ox, float oy, float oz, float ix, float iy, float iz, float tMin, float tMax)
+        /// <summary>Slab test; tNear is where the ray enters the box (clamped to tMin).</summary>
+        static bool Box(in Node b, float ox, float oy, float oz, float ix, float iy, float iz, float tMin, float tMax, out float tNear)
         {
-            int b = 6 * node;
-            float t0 = (_bounds[b] - ox) * ix, t1 = (_bounds[b + 3] - ox) * ix;
+            float t0 = (b.X0 - ox) * ix, t1 = (b.X1 - ox) * ix;
             if (t0 > t1) { var s = t0; t0 = t1; t1 = s; }
-            float u0 = (_bounds[b + 1] - oy) * iy, u1 = (_bounds[b + 4] - oy) * iy;
+            float u0 = (b.Y0 - oy) * iy, u1 = (b.Y1 - oy) * iy;
             if (u0 > u1) { var s = u0; u0 = u1; u1 = s; }
-            float w0 = (_bounds[b + 2] - oz) * iz, w1 = (_bounds[b + 5] - oz) * iz;
+            float w0 = (b.Z0 - oz) * iz, w1 = (b.Z1 - oz) * iz;
             if (w0 > w1) { var s = w0; w0 = w1; w1 = s; }
             // NaN (0 * inf, ray in a box face) compares false and leaves the bound unchanged.
             float near = tMin, far = tMax;
@@ -435,22 +525,36 @@ namespace ImgTools
             if (t1 < far) far = t1;
             if (u1 < far) far = u1;
             if (w1 < far) far = w1;
+            tNear = near;
             // Slack: float rounding must never lose a triangle lying in a box face.
             return near <= far * 1.00001f + 1e-6f;
         }
 
+        // Float <-> int bits for the traversal stack (BitConverter's versions are missing from .NET Framework 4.8).
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit)]
+        struct FloatBits
+        {
+            [System.Runtime.InteropServices.FieldOffset(0)] public float F;
+            [System.Runtime.InteropServices.FieldOffset(0)] public int I;
+        }
+
+        static int Bits(float f) => new FloatBits { F = f }.I;
+
+        static float Float(int i) => new FloatBits { I = i }.F;
+
         /// <summary>Möller–Trumbore, two-sided. Returns the ray parameter, or NaN.</summary>
         float Intersect(int f, float ox, float oy, float oz, float dx, float dy, float dz)
         {
+            var tri = _tri;
             int o = 9 * f;
-            float e1x = _tri[o + 3], e1y = _tri[o + 4], e1z = _tri[o + 5];
-            float e2x = _tri[o + 6], e2y = _tri[o + 7], e2z = _tri[o + 8];
+            float e1x = tri[o + 3], e1y = tri[o + 4], e1z = tri[o + 5];
+            float e2x = tri[o + 6], e2y = tri[o + 7], e2z = tri[o + 8];
             float px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x;
             float det = e1x * px + e1y * py + e1z * pz;
             if (det == 0)
                 return float.NaN;
             float inv = 1f / det;
-            float sx = ox - _tri[o], sy = oy - _tri[o + 1], sz = oz - _tri[o + 2];
+            float sx = ox - tri[o], sy = oy - tri[o + 1], sz = oz - tri[o + 2];
             float u = (sx * px + sy * py + sz * pz) * inv;
             if (u < 0 || u > 1)
                 return float.NaN;
