@@ -6,8 +6,8 @@ using Rhino.Commands;
 namespace ImgTools
 {
     /// <summary>
-    /// Opens the ImgTools options window: how the Shadows and Ambient Occlusion passes look,
-    /// for the live views and the captures alike. Right-click the Shadow View or AO View button.
+    /// Opens the ImgTools options window: how the Shadows, Ambient Occlusion and Normals passes
+    /// look, for the live views and the captures alike. Right-click a View button.
     /// </summary>
     public class ImgToolsOptionsCommand : Rhino.Commands.Command
     {
@@ -79,6 +79,15 @@ namespace ImgTools
             var aoAa = Stepper(AoSettings.AntiAlias, 1, 4, 0, 1, v => AoSettings.AntiAlias = (int)v);
             aoAa.ToolTip = "Samples per pixel axis in AOCapture (the live view uses 1).";
 
+            // --- Normals ----------------------------------------------------------------
+            var space = Drop(new[] { "Camera (x right, y up, z to viewer)", "World (model X, Y, Z)" }, NormalSettings.CameraSpace ? 0 : 1, i => NormalSettings.CameraSpace = i == 0);
+            var green = Drop(new[] { "Up (OpenGL, Blender, ControlNet)", "Down (DirectX, Unreal)" }, NormalSettings.GreenUp ? 0 : 1, i => NormalSettings.GreenUp = i == 0);
+            green.ToolTip = "Camera space only.";
+            var normalBackground = Drop(new[] { "Flat blue (128, 128, 255)", "Black" }, NormalSettings.FlatBackground ? 0 : 1, i => NormalSettings.FlatBackground = i == 0);
+            var normalFormat = Drop(new[] { "PNG (8-bit)", "PNG (16-bit)", "EXR (float, with alpha)" }, NormalSettings.Format, i => NormalSettings.Format = i);
+            var normalAa = Stepper(NormalSettings.AntiAlias, 1, 4, 0, 1, v => NormalSettings.AntiAlias = (int)v);
+            normalAa.ToolTip = "Samples per pixel axis in NormalCapture (the live view uses 1).";
+
             var close = new Button { Text = "Close" };
             close.Click += (s, e) => Close();
 
@@ -106,6 +115,18 @@ namespace ImgTools
                     Row("Anti-alias (capture)", aoAa),
                 },
             };
+            var normalsLayout = new TableLayout
+            {
+                Spacing = new Size(8, 6),
+                Rows =
+                {
+                    Row("Space", space),
+                    Row("Green", green),
+                    Row("Background", normalBackground),
+                    Row("Format (capture)", normalFormat),
+                    Row("Anti-alias (capture)", normalAa),
+                },
+            };
             Content = new StackLayout
             {
                 Spacing = 10,
@@ -114,6 +135,7 @@ namespace ImgTools
                 {
                     new GroupBox { Text = "Shadows  (ShadowView, ShadowCapture)", Content = shadows, Padding = new Padding(8) },
                     new GroupBox { Text = "Ambient occlusion  (AOView, AOCapture)", Content = ao, Padding = new Padding(8) },
+                    new GroupBox { Text = "Normals  (NormalView, NormalCapture)", Content = normalsLayout, Padding = new Padding(8) },
                     new StackLayout { Orientation = Orientation.Horizontal, Items = { null, close } },
                 },
             };

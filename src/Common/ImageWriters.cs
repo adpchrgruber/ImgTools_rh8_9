@@ -16,23 +16,8 @@ namespace ImgTools
             WritePng(path, width, height, 8, pixels);
         }
 
-        /// <summary>
-        /// Grey levels as an opaque RGBA PNG into a stream, compressed fast. For the live views:
-        /// Rhino 8 does not draw greyscale bitmaps in the viewport, RGBA it does.
-        /// </summary>
-        public static void WritePngRgba(Stream stream, int width, int height, byte[] grey)
-        {
-            var rgba = new byte[grey.Length * 4];
-            for (int i = 0, k = 0; i < grey.Length; i++, k += 4)
-            {
-                rgba[k] = rgba[k + 1] = rgba[k + 2] = grey[i];
-                rgba[k + 3] = 255;
-            }
-            WritePng(stream, width, height, 8, rgba, CompressionLevel.Fastest, colorType: 6);
-        }
-
         /// <summary>RGB triples (r, g, b per pixel) as an opaque RGBA PNG into a stream, compressed fast.</summary>
-        public static void WritePngRgbaFromRgb(Stream stream, int width, int height, byte[] rgb)
+        public static void WritePngRgba(Stream stream, int width, int height, byte[] rgb)
         {
             var rgba = new byte[rgb.Length / 3 * 4];
             for (int i = 0, k = 0; i < rgb.Length; i += 3, k += 4)

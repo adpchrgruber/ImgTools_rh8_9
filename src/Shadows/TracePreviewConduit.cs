@@ -17,6 +17,7 @@ namespace ImgTools
     {
         Shadows,
         AmbientOcclusion,
+        Normals,
     }
 
     /// <summary>
@@ -91,7 +92,7 @@ namespace ImgTools
             RhinoDoc.CloseDocument += (s, e) => ClearViews();
         }
 
-        string Label => _pass == TracePass.Shadows ? "Shadows" : "AO";
+        string Label => _pass == TracePass.Shadows ? "Shadows" : _pass == TracePass.AmbientOcclusion ? "AO" : "Normals";
 
         bool IsActive(RhinoViewport viewport) => viewport.DisplayMode?.Id == _modeId;
 
@@ -99,9 +100,9 @@ namespace ImgTools
         static bool Probing => ImgToolsPlugin.Instance?.DepthConduit?.Probe != null;
 
         /// <summary>Colour where there is no surface: "no shadow" / "open sky".</summary>
-        Color Background => _pass == TracePass.Shadows
-            ? (ShadowSettings.ShadowIsWhite ? Color.Black : Color.White)
-            : (AoSettings.OccludedIsBlack ? Color.White : Color.Black);
+        Color Background => _pass == TracePass.Shadows ? (ShadowSettings.ShadowIsWhite ? Color.Black : Color.White)
+            : _pass == TracePass.AmbientOcclusion ? (AoSettings.OccludedIsBlack ? Color.White : Color.Black)
+            : (NormalSettings.FlatBackground ? Color.FromArgb(128, 128, 255) : Color.Black);
 
         protected override void PreDrawObjects(DrawEventArgs e)
         {
@@ -185,11 +186,13 @@ namespace ImgTools
                 N(ShadowSettings.Softness);
                 sb.Append(ShadowSettings.Rays).Append(ShadowSettings.ShadowIsWhite);
             }
-            else
+            else if (_pass == TracePass.AmbientOcclusion)
             {
                 N(AoSettings.Radius(doc));
                 sb.Append(AoSettings.Rays).Append(AoSettings.OccludedIsBlack);
             }
+            else
+                sb.Append(NormalSettings.CameraSpace).Append(NormalSettings.GreenUp).Append(NormalSettings.FlatBackground);
             return sb.ToString();
         }
 
@@ -212,6 +215,7 @@ namespace ImgTools
             int aoRays = AoSettings.Rays;
             // Grey = value, or 1 - value: shadow white / occlusion black are the defaults.
             bool invert = pass == TracePass.Shadows ? !ShadowSettings.ShadowIsWhite : !AoSettings.OccludedIsBlack;
+            bool cameraSpace = NormalSettings.CameraSpace, greenUp = NormalSettings.GreenUp, flat = NormalSettings.FlatBackground;
             var viewportId = viewport.Id;
             uint docSerial = doc.RuntimeSerialNumber;
 
@@ -229,7 +233,9 @@ namespace ImgTools
                     var scene = new TraceScene { Camera = cam, Bvh = bvh, Clips = clips, Eps = 1e-6 * bvh.Size };
                     return pass == TracePass.Shadows
                         ? ShadowRender.Render(scene, 1, lights, form, softness, fast ? Math.Min(shadowRays, 4) : shadowRays, cancelled)
-                        : AoRender.Render(scene, 1, radius, fast ? Math.Min(aoRays, 9) : aoRays, cancelled);
+                        : pass == TracePass.AmbientOcclusion
+                        ? AoRender.Render(scene, 1, radius, fast ? Math.Min(aoRays, 9) : aoRays, cancelled)
+                        : NormalRender.Render(scene, 1, cameraSpace, greenUp, cancelled);
                 }
 
                 if (quick)
@@ -239,12 +245,12 @@ namespace ImgTools
                     var image = Render(Scaled(camera, Math.Max(2, camera.Width / f), Math.Max(2, camera.Height / f)), true);
                     if (image == null)
                         return;
-                    Publish(docSerial, viewportId, key, false, Png(Upscale(image, camera.Width, camera.Height), camera.Width, camera.Height, invert), cancel);
+                    Publish(docSerial, viewportId, key, false, Png(image, camera.Width, camera.Height, invert, flat), cancel);
                 }
                 var full = Render(camera, false);
                 if (full == null)
                     return;
-                Publish(docSerial, viewportId, key, true, Png(full.Value, camera.Width, camera.Height, invert), cancel);
+                Publish(docSerial, viewportId, key, true, Png(full, camera.Width, camera.Height, invert, flat), cancel);
             });
         }
 
@@ -255,30 +261,36 @@ namespace ImgTools
             Width = width, Height = height,
         };
 
-        /// <summary>Nearest-neighbour upscale of a small preview to the viewport size.</summary>
-        static float[] Upscale(TraceImage image, int width, int height)
+        /// <summary>
+        /// The image as an RGBA PNG of the viewport's size (a smaller quick pass is scaled up,
+        /// nearest neighbour). Grey passes: value or 1 - value; the normal pass: its colours.
+        /// </summary>
+        static byte[] Png(TraceImage image, int width, int height, bool invert, bool flatBackground)
         {
-            var result = new float[width * height];
+            bool colour = image.Rgb != null;
+            var encoded = colour ? NormalRender.To8(NormalRender.Encode(image, flatBackground)) : null;
+            var rgb = new byte[3 * width * height];
             for (int y = 0; y < height; y++)
             {
                 int sy = Math.Min(image.Height - 1, y * image.Height / height);
                 for (int x = 0; x < width; x++)
-                    result[y * width + x] = image.Value[sy * image.Width + Math.Min(image.Width - 1, x * image.Width / width)];
-            }
-            return result;
-        }
-
-        static byte[] Png(float[] values, int width, int height, bool invert)
-        {
-            var pixels = new byte[values.Length];
-            for (int i = 0; i < pixels.Length; i++)
-            {
-                double v = invert ? 1 - values[i] : values[i];
-                pixels[i] = (byte)Math.Round(255 * (v < 0 ? 0 : v > 1 ? 1 : v));
+                {
+                    int src = sy * image.Width + Math.Min(image.Width - 1, x * image.Width / width);
+                    int dst = 3 * (y * width + x);
+                    if (colour)
+                    {
+                        rgb[dst] = encoded[3 * src];
+                        rgb[dst + 1] = encoded[3 * src + 1];
+                        rgb[dst + 2] = encoded[3 * src + 2];
+                        continue;
+                    }
+                    double v = invert ? 1 - image.Value[src] : image.Value[src];
+                    rgb[dst] = rgb[dst + 1] = rgb[dst + 2] = (byte)Math.Round(255 * (v < 0 ? 0 : v > 1 ? 1 : v));
+                }
             }
             using (var stream = new MemoryStream())
             {
-                ImageWriters.WritePngRgba(stream, width, height, pixels);
+                ImageWriters.WritePngRgba(stream, width, height, rgb);
                 return stream.ToArray();
             }
         }

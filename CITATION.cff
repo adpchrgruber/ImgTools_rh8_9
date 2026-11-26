@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use ImgTools, please cite it as below. It was co-created with generative AI; see the README's 'Credits and AI disclosure'."
 type: software
-title: "ImgTools: clown, depth, shadow and ambient occlusion passes for Rhino"
-version: 1.2.0-beta
+title: "ImgTools: clown, depth, shadow, ambient occlusion and normal passes for Rhino"
+version: 1.3.0-beta
 date-released: 2026-11-26
 authors:
   - alias: adpchrgruber
@@ -10,7 +10,7 @@ license: MIT
 repository-code: "https://github.com/adpchrgruber/ImgTools_rh8_9"
 abstract: >-
   Rhino 8/9 plug-in that renders image passes for compositing: an object-ID (clown) pass,
-  a depth pass, a raw shadow pass (hard or soft) and an ambient occlusion pass, each aligned
+  a depth pass, a raw shadow pass (hard or soft), an ambient occlusion pass and a normal pass, each aligned
   pixel for pixel with renders of the same view. Merges the earlier ClownID and ZDepth
   plug-ins. Developed with generative AI assistance (Claude Opus 5.5 in Claude Code,
   Anthropic), directed, reviewed and tested by the author.
@@ -21,6 +21,7 @@ keywords:
   - depth map
   - shadow pass
   - ambient occlusion
+  - normal map
   - compositing
 references:
   - type: software

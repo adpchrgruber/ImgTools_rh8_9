@@ -3,18 +3,20 @@
 <img src="dist/icon.png" width="64" align="right" alt="ImgTools icon">
 
 ImgTools plug-in for Rhinoceros® 8 and 9: image passes for compositing your renders, in one
-package. It combines the former **ClownID** and **ZDepth** plug-ins and adds **shadow** and
-**ambient occlusion** passes. Every capture lines up pixel for pixel with a render of the same
+package. It combines the former **ClownID** and **ZDepth** plug-ins and adds **shadow**,
+**ambient occlusion** and **normal** passes. Every capture lines up pixel for pixel with a render of the same
 view and size, and writes a JSON file next to the image that describes it. Written in C# /
 RhinoCommon for Mac and Windows.
 
-> **Beta (1.2.0-beta).** Tested on Rhino 8 and 9 for Mac. Built for Rhino 8 and 9 (Mac and Windows).
+> **Beta (1.3.0-beta).** Tested on Rhino 8 and 9 for Mac. Built for Rhino 8 and 9 (Mac and Windows).
 
 | Rendered | Clown ID | Z Depth |
 |---|---|---|
 | ![Rendered view](docs/rendered.png) | ![Clown ID pass](docs/clown-id-pass.png) | ![Z Depth pass](docs/zdepth-pass.png) |
 | **Shadows** | **Soft shadows** (3°, black on white) | **Ambient occlusion** |
 | ![Shadow pass](docs/shadow-pass.png) | ![Soft shadow pass](docs/shadow-pass-soft.png) | ![AO pass](docs/ao-pass.png) |
+| **Normals** (camera space) | **Normals** (world space, black background) | |
+| ![Normal pass](docs/normal-pass.png) | ![World-space normal pass](docs/normal-pass-world.png) | |
 
 ## Passes and commands
 
@@ -24,18 +26,19 @@ RhinoCommon for Mac and Windows.
 | Z Depth | `ZDepth` (toggles the *Z Depth* display mode), `ZDepthCapture`, `ZDepthRange` | 8-bit PNG, 16-bit PNG or float EXR depth map |
 | Shadows | `ShadowView` (toggles the live *Shadows* display mode), `ShadowCapture` | 8-bit PNG shadow mask, hard or soft |
 | Ambient occlusion | `AOView` (toggles the live *Ambient Occlusion* display mode), `AOCapture` | 8-bit PNG AO pass |
+| Normals | `NormalView` (toggles the live *Normals* display mode), `NormalCapture` | 8-bit or 16-bit RGB PNG, or float EXR (R, G, B, A) |
 
 All commands are on the **ImgTools** toolbar. Right-click the Z Depth button for `ZDepthRange`,
-and the Shadow View or AO View button for **`ImgToolsOptions`**: a small window with every
-option of the Shadows and AO passes. Changes apply at once to the live views and are used by
-`ShadowCapture` and `AOCapture`, so what you see is what you save.
+and the Shadow View, AO View or Normal View button for **`ImgToolsOptions`**: a small window
+with every option of the Shadows, AO and Normals passes. Changes apply at once to the live
+views and are used by the capture commands, so what you see is what you save.
 
 ## Installation
 
 Rhino 8 or 9 (Mac or Windows):
 
 - **From the Package Manager**: search for *ImgTools*.
-- **From the package file**: drag [`dist/imgtools-1.2.0-beta-rh8_0-any.yak`](dist/) into a
+- **From the package file**: drag [`dist/imgtools-1.3.0-beta-rh8_0-any.yak`](dist/) into a
   Rhino window, then restart Rhino.
 - **From the command line**, with this repository checked out:
 
@@ -112,6 +115,23 @@ render or over the shadow pass for more depth and contact.
 
 A hit at distance *d* darkens by 1 − *d* / radius, so the gradient fades out smoothly at the
 radius.
+
+### Normals
+
+**NormalView** shows the normal pass live; **NormalCapture** saves it. Each visible point gets
+its smooth surface normal (interpolated from the render mesh's vertex normals, facing the
+camera) as colour: rgb = normal × 0.5 + 0.5. Use it to relight renders in Nuke, Fusion or After
+Effects, or as a ControlNet normal map.
+
+| Option | |
+|---|---|
+| `Space` | `Camera` (default): x right, y up, z towards the viewer; flat surfaces facing you are (128, 128, 255). `World`: the model's X, Y, Z. |
+| `Green` | Camera space only. `Up` (default): the OpenGL convention, as in Blender and ControlNet. `Down`: the DirectX convention, as in Unreal. |
+| `Background` | `Flat` (default): the flat normal (128, 128, 255). `Black`. |
+| `Format` | `PNG` (8-bit), `PNG16` (16-bit, smoother gradients for relighting), or `EXR`: float R, G, B = the normal itself (−1…1) and A = coverage, background 0. |
+| `AntiAlias`, `Width`, `Height` | As above. Anti-aliased edges are blended with the background. |
+
+The pass shows the shape of the geometry only, not bump or normal-map textures from materials.
 
 ## Build
 

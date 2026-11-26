@@ -9,6 +9,7 @@ namespace ImgTools
     ///   Z Depth    – the depth pass, live and as exact maps (ZDepth, ZDepthCapture, ZDepthRange)
     ///   Shadows    – the raw cast shadows of the sun or lights, hard or soft, live and as a mask (ShadowView, ShadowCapture)
     ///   AO         – ambient occlusion, live and as a pass (AOView, AOCapture)
+    ///   Normals    – surface normals in camera or world space, live and as a pass (NormalView, NormalCapture)
     ///   Appearance of the live views and captures: ImgToolsOptions
     ///</summary>
     public class ImgToolsPlugin : PlugIn
@@ -28,6 +29,8 @@ namespace ImgTools
         internal TracePreviewConduit ShadowConduit { get; private set; }
 
         internal TracePreviewConduit AoConduit { get; private set; }
+
+        internal TracePreviewConduit NormalConduit { get; private set; }
 
         // Load with Rhino so the display modes are never selected without their conduits behind them.
         public override PlugInLoadTime LoadTime => PlugInLoadTime.AtStartup;
@@ -49,15 +52,17 @@ namespace ImgTools
 
             var shadows = TraceDisplayModes.Shadows();
             var ao = TraceDisplayModes.Ao();
-            if (shadows == null || ao == null)
+            var normals = TraceDisplayModes.Normals();
+            if (shadows == null || ao == null || normals == null)
             {
-                errorMessage = "Could not create the \"" + TraceDisplayModes.ShadowsName + "\" and \"" + TraceDisplayModes.AoName + "\" display modes.";
+                errorMessage = "Could not create the \"" + TraceDisplayModes.ShadowsName + "\", \"" + TraceDisplayModes.AoName + "\" and \"" + TraceDisplayModes.NormalsName + "\" display modes.";
                 return LoadReturnCode.ErrorShowDialog;
             }
 
             ClownConduit = new ClownIdConduit(clown.Id) { Enabled = true };
             ShadowConduit = new TracePreviewConduit(shadows.Id, TracePass.Shadows) { Enabled = true };
             AoConduit = new TracePreviewConduit(ao.Id, TracePass.AmbientOcclusion) { Enabled = true };
+            NormalConduit = new TracePreviewConduit(normals.Id, TracePass.Normals) { Enabled = true };
 
             DepthConduit = new ZDepthConduit(depth.Id) { Enabled = true };
             RhinoDoc.DeleteRhinoObject += (s, e) => DepthConduit.Forget(e.TheObject.RuntimeSerialNumber);
@@ -78,6 +83,8 @@ namespace ImgTools
                 ShadowConduit.Enabled = false;
             if (AoConduit != null)
                 AoConduit.Enabled = false;
+            if (NormalConduit != null)
+                NormalConduit.Enabled = false;
         }
     }
 }

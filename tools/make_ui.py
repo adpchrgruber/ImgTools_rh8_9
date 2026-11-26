@@ -5,7 +5,8 @@ Generates ImgTools' UI assets (standard library only):
   dist/icon.png                   package icon
   resources/ImgTools.rui          toolbar: ClownID, ClownIDCapture, ZDepth (right-click: ZDepthRange), ZDepthCapture,
                                   ShadowView (right-click: ImgToolsOptions), ShadowCapture,
-                                  AOView (right-click: ImgToolsOptions), AOCapture
+                                  AOView (right-click: ImgToolsOptions), AOCapture,
+                                  NormalView (right-click: ImgToolsOptions), NormalCapture
 
 Run from the repository root:  python3 tools/make_ui.py
 GUIDs are fixed so Rhino keeps the toolbar's position and visibility across updates.
@@ -138,6 +139,27 @@ def ao_shapes(x, y, box=(0.0, 0.0, 1.0, 1.0)):
     return (g, g, g)
 
 
+def normal_shapes(x, y, box=(0.0, 0.0, 1.0, 1.0)):
+    """The motif as a camera-space normal map: flat blue ground, each face coloured by its normal."""
+    x0, y0, x1, y1 = box
+    u, v = (x - x0) / (x1 - x0), (y - y0) / (y1 - y0)
+    if not (0 <= u <= 1 and 0 <= v <= 1):
+        return None
+
+    def enc(nx, ny, nz):
+        l = (nx * nx + ny * ny + nz * nz) ** 0.5
+        return tuple(round(255 * (c / l * 0.5 + 0.5)) for c in (nx, ny, nz))
+
+    du, dv = (u - 0.69) / 0.19, (v - 0.60) / 0.19
+    if du * du + dv * dv <= 1:
+        return enc(du, -dv, max(0.0, 1 - du * du - dv * dv) ** 0.5)   # sphere
+    if 0.29 <= u <= 0.51 and 0.13 <= v <= 0.62:
+        return enc(-0.55, 0.25, 0.8)    # tall block, facing left and a little up
+    if 0.13 <= u <= 0.60 and 0.44 <= v <= 0.87:
+        return enc(0.0, 0.6, 0.8)       # low block, facing up
+    return enc(0, 0, 1)                  # flat ground
+
+
 def plugin_icon(x, y):
     """Three bands: clown, depth, shadow."""
     if not in_rounded_square(x, y):
@@ -236,6 +258,12 @@ BUTTONS = [
     ('d3f7eb73-539e-400e-a9f5-d3c001034065', '961874cf-8c64-4660-8d7a-455a6ee9c4d1',
      '72efd309-362f-489c-8c26-007487c9a10c', capture(ao_shapes), '! _AOCapture', 'AO Capture',
      'Save an ambient occlusion pass of the active view: soft contact shadows in corners and creases'),
+    ('d1e6dd72-afed-444e-87ad-0ab777d0a34f', '4243647d-146f-4fb9-aa58-9da0fccd40c9',
+     'ff254c09-9a66-4e7e-8e45-d622a14fcb88', mode(normal_shapes), '! _NormalView', 'Normal View',
+     'Switch the active viewport to the live Normals view and back (right-click: options)'),
+    ('932c4aea-85bb-413e-bfc8-10575978a811', '7e04ec47-500d-4c45-aac1-330ddf8c0969',
+     'b5016467-c77e-40da-b95d-17ccc03d85b8', capture(normal_shapes), '! _NormalCapture', 'Normal Capture',
+     'Save a normal pass of the active view: PNG, 16-bit PNG or EXR, camera or world space'),
 ]
 
 # Right-click on a button: (button index, macro id, script, name, tooltip)
@@ -243,9 +271,11 @@ RIGHT_MACROS = [
     (2, '490f5a7d-18e8-472f-86ed-4d1b8e3d411c', '! _ZDepthRange', 'Z Depth Range',
      'Set the depth range (auto or fixed near/far) and which end is white'),
     (4, '0b24c515-22c2-4054-80a2-81d36cc88247', '! _ImgToolsOptions', 'ImgTools Options',
-     'How the Shadows and Ambient Occlusion passes look, live and in captures'),
+     'How the Shadows, AO and Normals passes look, live and in captures'),
     (6, '2ce90562-8fcb-456a-9121-df823a473d44', '! _ImgToolsOptions', 'ImgTools Options',
-     'How the Shadows and Ambient Occlusion passes look, live and in captures'),
+     'How the Shadows, AO and Normals passes look, live and in captures'),
+    (8, '2616d519-ff54-4bdb-868d-656e4d0e149f', '! _ImgToolsOptions', 'ImgTools Options',
+     'How the Shadows, AO and Normals passes look, live and in captures')
 ]
 
 def text(tag, value, indent):

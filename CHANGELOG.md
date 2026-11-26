@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0-beta — 2026-11-26
+
+- **Normal pass.** `NormalCapture` saves each visible point's smooth surface normal as colour,
+  in camera space (OpenGL green-up or DirectX green-down) or world space, as an 8-bit or
+  16-bit RGB PNG or a float EXR (R, G, B = normal, A = coverage). `NormalView` and a toolbar
+  button show it live; its options are in the options window (right-click Normal View).
+
 ## 1.2.0-beta — 2026-11-26
 
 - **Live Ambient Occlusion view.** `AOView` and an **AO View** toolbar button switch a viewport

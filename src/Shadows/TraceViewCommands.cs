@@ -12,10 +12,13 @@ namespace ImgTools
     {
         public const string ShadowsName = "Shadows";
         public const string AoName = "Ambient Occlusion";
+        public const string NormalsName = "Normals";
 
         public static DisplayModeDescription Shadows() => PassDisplayMode.Ensure(ShadowsName, Color.Black);
 
         public static DisplayModeDescription Ao() => PassDisplayMode.Ensure(AoName, Color.White);
+
+        public static DisplayModeDescription Normals() => PassDisplayMode.Ensure(NormalsName, Color.FromArgb(128, 128, 255));
     }
 
     /// <summary>
@@ -45,6 +48,20 @@ namespace ImgTools
         protected override Result RunCommand(RhinoDoc doc, RunMode mode) =>
             TraceViews.Toggle(doc, TraceDisplayModes.Ao(), _previousModes, "Ambient occlusion", "AOView",
                 "radius " + AoSettings.Radius(doc).ToString("G4", System.Globalization.CultureInfo.InvariantCulture) + " " + doc.GetUnitSystemName(true, true, false, true) + ", " + AoSettings.Rays + " rays");
+    }
+
+    /// <summary>
+    /// Toggles the active viewport between the live Normals view and the mode it had before.
+    /// Appearance: ImgToolsOptions (right-click the button), shared with NormalCapture.
+    /// </summary>
+    public class NormalViewCommand : Command
+    {
+        readonly Dictionary<Guid, Guid> _previousModes = new Dictionary<Guid, Guid>();
+
+        public override string EnglishName => "NormalView";
+
+        protected override Result RunCommand(RhinoDoc doc, RunMode mode) =>
+            TraceViews.Toggle(doc, TraceDisplayModes.Normals(), _previousModes, "Normals", "NormalView", NormalSettings.Describe());
     }
 
     internal static class TraceViews
