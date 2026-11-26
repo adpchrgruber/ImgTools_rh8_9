@@ -9,6 +9,7 @@ namespace ImgTools
     {
         public int Width, Height;
         public float[] Value;
+        public float[] Rgb;        // three values per pixel (the normal pass); null otherwise
         public float[] Coverage;   // share of samples that hit a surface, 0..1
         public int Triangles, Casters, Receivers;
     }
