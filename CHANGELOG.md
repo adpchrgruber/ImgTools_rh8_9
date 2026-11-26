@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.1-beta — 2026-11-26
 
 - **JSON files can be switched off.** *Write a JSON file next to each image* in the options
   window (and `Json` in `CaptureAll`) turns off the JSON next to every capture and Capture

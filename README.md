@@ -8,7 +8,7 @@ package. It combines the former **ClownID** and **ZDepth** plug-ins and adds **s
 view and size, and writes a JSON file next to the image that describes it. Written in C# /
 RhinoCommon for Mac and Windows.
 
-> **Beta (1.5.0-beta).** Tested on Rhino 8 and 9 for Mac. Built for Rhino 8 and 9 (Mac and Windows).
+> **Beta (1.5.1-beta).** Tested on Rhino 8 and 9 for Mac. Built for Rhino 8 and 9 (Mac and Windows).
 
 | Rendered | Clown ID | Z Depth |
 |---|---|---|
@@ -51,7 +51,7 @@ views and are used by the capture commands, so what you see is what you save.
 Rhino 8 or 9 (Mac or Windows):
 
 - **From the Package Manager**: search for *ImgTools*.
-- **From the package file**: drag [`dist/imgtools-1.5.0-beta-rh8_0-any.yak`](dist/) into a
+- **From the package file**: drag [`dist/imgtools-1.5.1-beta-rh8_0-any.yak`](dist/) into a
   Rhino window, then restart Rhino.
 - **From the command line**, with this repository checked out:
 
