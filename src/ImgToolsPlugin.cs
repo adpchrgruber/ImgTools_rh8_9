@@ -7,7 +7,7 @@ namespace ImgTools
     /// ImgTools: image passes for compositing renders made in Rhino 8.
     ///   Clown ID   – every object in its own flat ID colour (ClownID, ClownIDCapture)
     ///   Z Depth    – the depth pass, live and as exact maps (ZDepth, ZDepthCapture, ZDepthRange)
-    ///   Shadows    – the raw cast shadows of the sun or lights as a mask, hard or soft (ShadowCapture)
+    ///   Shadows    – the raw cast shadows of the sun or lights, hard or soft, live and as a mask (ShadowView, ShadowCapture)
     ///   AO         – ambient occlusion (AOCapture)
     ///</summary>
     public class ImgToolsPlugin : PlugIn
@@ -23,6 +23,8 @@ namespace ImgTools
         internal ClownIdConduit ClownConduit { get; private set; }
 
         internal ZDepthConduit DepthConduit { get; private set; }
+
+        internal ShadowPreviewConduit ShadowConduit { get; private set; }
 
         // Load with Rhino so the display modes are never selected without their conduits behind them.
         public override PlugInLoadTime LoadTime => PlugInLoadTime.AtStartup;
@@ -42,7 +44,15 @@ namespace ImgTools
                 return LoadReturnCode.ErrorShowDialog;
             }
 
+            var shadows = ShadowDisplayMode.Ensure();
+            if (shadows == null)
+            {
+                errorMessage = "Could not create the \"" + ShadowDisplayMode.Name + "\" display mode.";
+                return LoadReturnCode.ErrorShowDialog;
+            }
+
             ClownConduit = new ClownIdConduit(clown.Id) { Enabled = true };
+            ShadowConduit = new ShadowPreviewConduit(shadows.Id) { Enabled = true };
 
             DepthConduit = new ZDepthConduit(depth.Id) { Enabled = true };
             RhinoDoc.DeleteRhinoObject += (s, e) => DepthConduit.Forget(e.TheObject.RuntimeSerialNumber);
@@ -59,6 +69,8 @@ namespace ImgTools
                 ClownConduit.Enabled = false;
             if (DepthConduit != null)
                 DepthConduit.Enabled = false;
+            if (ShadowConduit != null)
+                ShadowConduit.Enabled = false;
         }
     }
 }

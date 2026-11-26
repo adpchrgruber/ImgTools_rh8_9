@@ -16,6 +16,12 @@ namespace ImgTools
             WritePng(path, width, height, 8, pixels);
         }
 
+        /// <summary>Greyscale PNG into a stream, compressed fast (for previews).</summary>
+        public static void WritePng8(Stream stream, int width, int height, byte[] pixels)
+        {
+            WritePng(stream, width, height, 8, pixels, CompressionLevel.Fastest);
+        }
+
         public static void WritePng16(string path, int width, int height, ushort[] pixels)
         {
             var bytes = new byte[pixels.Length * 2];
@@ -81,6 +87,12 @@ namespace ImgTools
 
         static void WritePng(string path, int width, int height, int bitDepth, byte[] samples)
         {
+            using (var stream = File.Create(path))
+                WritePng(stream, width, height, bitDepth, samples, CompressionLevel.Optimal);
+        }
+
+        static void WritePng(Stream stream, int width, int height, int bitDepth, byte[] samples, CompressionLevel level)
+        {
             int rowBytes = width * bitDepth / 8;
             byte[] compressed;
             using (var zlib = new MemoryStream())
@@ -88,7 +100,7 @@ namespace ImgTools
                 zlib.WriteByte(0x78);   // zlib header: deflate, 32K window
                 zlib.WriteByte(0x01);
                 uint a = 1, b = 0;      // Adler-32 of the uncompressed data
-                using (var deflate = new DeflateStream(zlib, CompressionLevel.Optimal, true))
+                using (var deflate = new DeflateStream(zlib, level, true))
                 {
                     var row = new byte[rowBytes + 1];
                     row[0] = 2;         // filter "Up": depth changes slowly from row to row
@@ -109,7 +121,6 @@ namespace ImgTools
                 compressed = zlib.ToArray();
             }
 
-            using (var stream = File.Create(path))
             {
                 stream.Write(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }, 0, 8);
                 var header = new MemoryStream();

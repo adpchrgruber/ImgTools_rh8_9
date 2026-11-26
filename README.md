@@ -8,7 +8,7 @@ package. It combines the former **ClownID** and **ZDepth** plug-ins and adds **s
 view and size, and writes a JSON file next to the image that describes it. Written in C# /
 RhinoCommon for Mac and Windows.
 
-> **Beta (1.0.0-beta).** Tested on Rhino 9 for Mac. Built for Rhino 8 (Mac and Windows).
+> **Beta (1.1.0-beta).** Tested on Rhino 9 for Mac. Built for Rhino 8 (Mac and Windows).
 
 | Rendered | Clown ID | Z Depth |
 |---|---|---|
@@ -22,7 +22,7 @@ RhinoCommon for Mac and Windows.
 |---|---|---|
 | Clown ID | `ClownID` (toggles the *Clown ID* display mode), `ClownIDCapture` | PNG, one exact flat colour per object; JSON colour → object key |
 | Z Depth | `ZDepth` (toggles the *Z Depth* display mode), `ZDepthCapture`, `ZDepthRange` | 8-bit PNG, 16-bit PNG or float EXR depth map |
-| Shadows | `ShadowCapture` | 8-bit PNG shadow mask, hard or soft |
+| Shadows | `ShadowView` (toggles the live *Shadows* display mode), `ShadowCapture` | 8-bit PNG shadow mask, hard or soft |
 | Ambient occlusion | `AOCapture` | 8-bit PNG AO pass |
 
 All commands are on the **ImgTools** toolbar. Right-click the Z Depth button for `ZDepthRange`.
@@ -32,7 +32,7 @@ All commands are on the **ImgTools** toolbar. Right-click the Z Depth button for
 Rhino 8 or 9 (Mac or Windows):
 
 - **From the Package Manager**: search for *ImgTools*.
-- **From the package file**: drag [`dist/imgtools-1.0.0-beta-rh8_0-any.yak`](dist/) into a
+- **From the package file**: drag [`dist/imgtools-1.1.0-beta-rh8_0-any.yak`](dist/) into a
   Rhino window, then restart Rhino.
 - **From the command line**, with this repository checked out:
 
@@ -63,6 +63,14 @@ an 8-bit PNG, a 16-bit PNG, or a float EXR in model units (channel `Z`). It is c
 the CPU, so display settings do not change it.
 
 ### Shadows
+
+**ShadowView** switches the active viewport to the live *Shadows* display mode; run it again
+to switch back. You can also pick *Shadows* from any viewport's display mode menu. The view
+shows exactly what `ShadowCapture` will save, with the same options: change them in
+`ShadowCapture` (then press Esc if you don't want to save) and the view updates. It is traced
+in the background. While you orbit it shows a quick, coarser image, and when the camera stops
+it fills in at full resolution, which takes a fraction of a second for hard shadows and about a
+second for soft ones on the test scene. Editing the model, the sun or the lights updates it.
 
 **ShadowCapture** saves only the shadows: where the sun or lights are blocked, with no
 materials, textures or shading. Use it as a mask to grade shadows separately, or to put

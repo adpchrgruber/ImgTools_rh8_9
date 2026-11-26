@@ -28,7 +28,7 @@ namespace ImgTools
         /// <param name="softness">Angular diameter of the lights in degrees; 0 for hard shadows.</param>
         /// <param name="rays">Shadow rays per pixel per light when soft (spread over the anti-alias samples).</param>
         public static TraceImage Render(TraceScene scene, int samples, IList<ShadowLight> lights, bool formShadows,
-            double softness, int rays)
+            double softness, int rays, Func<bool> cancelled = null)
         {
             var bvh = scene.Bvh;
             var origin = bvh.Origin;
@@ -89,7 +89,9 @@ namespace ImgTools
                     dark += (double)blocked / perSample;
                 }
                 return lights.Count == 0 ? 0 : dark / lights.Count;
-            }, out var coverage);
+            }, out var coverage, cancelled);
+            if (values == null)
+                return null;
 
             return new TraceImage
             {

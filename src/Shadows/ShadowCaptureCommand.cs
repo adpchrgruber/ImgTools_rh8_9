@@ -21,12 +21,13 @@ namespace ImgTools
     /// </summary>
     public class ShadowCaptureCommand : Command
     {
-        int _source = ShadowLights.Sun;
-        bool _formShadows;
-        bool _shadowIsWhite = true;
-        int _antialias = 2;
-        double _softness;      // degrees; 0 = hard
-        int _rays = 32;
+        // Options live in ShadowSettings, shared with the live Shadows view.
+        static int _source { get => ShadowSettings.Source; set => ShadowSettings.Source = value; }
+        static bool _formShadows { get => ShadowSettings.FormShadows; set => ShadowSettings.FormShadows = value; }
+        static bool _shadowIsWhite { get => ShadowSettings.ShadowIsWhite; set => ShadowSettings.ShadowIsWhite = value; }
+        static int _antialias { get => ShadowSettings.AntiAlias; set => ShadowSettings.AntiAlias = value; }
+        static double _softness { get => ShadowSettings.Softness; set => ShadowSettings.Softness = value; }
+        static int _rays { get => ShadowSettings.Rays; set => ShadowSettings.Rays = value; }
 
         public override string EnglishName => "ShadowCapture";
 
@@ -68,6 +69,7 @@ namespace ImgTools
                     else if (index == raysIndex) _rays = rays.CurrentValue;
                     else if (index == whiteIndex) _shadowIsWhite = white.CurrentValue;
                     else if (index == aaIndex) _antialias = aa.CurrentValue;
+                    doc.Views.Redraw();   // the Shadows view follows these options
                     continue;
                 }
                 if (res == GetResult.Nothing)

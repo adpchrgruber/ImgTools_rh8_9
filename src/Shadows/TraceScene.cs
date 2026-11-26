@@ -39,22 +39,41 @@ namespace ImgTools
             var camera = DepthCapture.Probe(ImgToolsPlugin.Instance.DepthConduit, view, width, height, out var drawn);
             if (camera == null)
                 return null;
-
-            // Visible: what the view draws. Casters: every shown object that casts shadows,
-            // also those outside the frame, whose shadows can still fall into it.
-            var roles = new Dictionary<uint, (RhinoObject Obj, ShadowBvh.Role Role)>();
-            foreach (var obj in drawn)
-                roles[obj.RuntimeSerialNumber] = (obj, ShadowBvh.Role.Visible);
-            var settings = new ObjectEnumeratorSettings { HiddenObjects = false, LockedObjects = true, IncludeLights = false, IncludeGrips = false, VisibleFilter = true };
-            foreach (var obj in doc.Objects.GetObjectList(settings))
+            var items = CollectItems(doc, drawn, out int casters, out int receivers);
+            var bvh = new ShadowBvh(items);
+            return new TraceScene
             {
-                if (obj.IsInstanceDefinitionGeometry || !obj.Attributes.CastsShadows)
+                Camera = camera,
+                Bvh = bvh,
+                Clips = ClipsFor(doc, view.ActiveViewport, bvh.Origin),
+                Eps = 1e-6 * bvh.Size,
+                Casters = casters,
+                Receivers = receivers,
+            };
+        }
+
+        /// <summary>
+        /// Triangles with their roles. Visible: the given objects (what the view draws; all
+        /// shown objects when null). Casters: every shown object that casts shadows, also those
+        /// outside the frame, whose shadows can still fall into it. Must run on the UI thread.
+        /// </summary>
+        public static List<(DepthItem, ShadowBvh.Role)> CollectItems(RhinoDoc doc, IEnumerable<RhinoObject> visible,
+            out int casters, out int receivers)
+        {
+            var settings = new ObjectEnumeratorSettings { HiddenObjects = false, LockedObjects = true, IncludeLights = false, IncludeGrips = false, VisibleFilter = true };
+            var shown = doc.Objects.GetObjectList(settings).Where(o => !o.IsInstanceDefinitionGeometry).ToList();
+            var roles = new Dictionary<uint, (RhinoObject Obj, ShadowBvh.Role Role)>();
+            foreach (var obj in visible ?? shown)
+                roles[obj.RuntimeSerialNumber] = (obj, ShadowBvh.Role.Visible);
+            foreach (var obj in shown)
+            {
+                if (!obj.Attributes.CastsShadows)
                     continue;
                 roles.TryGetValue(obj.RuntimeSerialNumber, out var r);
                 roles[obj.RuntimeSerialNumber] = (obj, r.Role | ShadowBvh.Role.Casts);
             }
             var items = new List<(DepthItem, ShadowBvh.Role)>();
-            int casters = 0, receivers = 0;
+            casters = receivers = 0;
             foreach (var (obj, role0) in roles.Values)
             {
                 var role = role0;
@@ -68,21 +87,14 @@ namespace ImgTools
                 foreach (var item in DepthScene.Collect(doc, new[] { obj }))
                     items.Add((item, role));
             }
-            var bvh = new ShadowBvh(items);
-            var origin = bvh.Origin;
-            return new TraceScene
-            {
-                Camera = camera,
-                Bvh = bvh,
-                // Clipping planes as (normal, offset) relative to the BVH origin: keep n.p + d >= 0.
-                Clips = DepthCapture.WorldClippingPlanes(doc, view.ActiveViewport)
-                    .Select(p => (n: p.Normal, d: (origin - p.Origin) * p.Normal))
-                    .ToArray(),
-                Eps = 1e-6 * bvh.Size,
-                Casters = casters,
-                Receivers = receivers,
-            };
+            return items;
         }
+
+        /// <summary>The viewport's clipping planes as (normal, offset) relative to origin: keep n.p + d >= 0.</summary>
+        public static (Vector3d n, double d)[] ClipsFor(RhinoDoc doc, RhinoViewport viewport, Point3d origin) =>
+            DepthCapture.WorldClippingPlanes(doc, viewport)
+                .Select(p => (n: p.Normal, d: (origin - p.Origin) * p.Normal))
+                .ToArray();
 
         /// <summary>
         /// Runs <paramref name="shade"/> for s×s samples per pixel that hit a surface and
@@ -90,15 +102,22 @@ namespace ImgTools
         /// shade gets the hit, the sample index within the pixel, a per-thread stack and a
         /// random generator seeded by pixel and sample, so images are repeatable.
         /// </summary>
-        public float[] Shade(int samples, double miss, Func<SurfaceHit, int[], Rng, double> shade, out float[] coverage)
+        /// <remarks>Returns null when <paramref name="cancelled"/> turns true before the image is done.</remarks>
+        public float[] Shade(int samples, double miss, Func<SurfaceHit, int[], Rng, double> shade, out float[] coverage,
+            Func<bool> cancelled = null)
         {
             int width = Width, height = Height;
             var values = new float[width * height];
             var cover = new float[width * height];
             int s = Math.Max(1, samples);
             double inv = 1.0 / (s * s);
-            Parallel.For(0, height, () => new int[Bvh.StackSize], (y, _, stack) =>
+            var result = Parallel.For(0, height, () => new int[Bvh.StackSize], (y, state, stack) =>
             {
+                if (cancelled != null && cancelled())
+                {
+                    state.Stop();
+                    return stack;
+                }
                 for (int x = 0; x < width; x++)
                 {
                     double sum = 0, hits = 0;
@@ -124,7 +143,7 @@ namespace ImgTools
                 return stack;
             }, _ => { });
             coverage = cover;
-            return values;
+            return result.IsCompleted ? values : null;
         }
 
         /// <summary>

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0-beta — 2026-11-26
+
+- **Live Shadows view.** `ShadowView` (and a toolbar button) switches a viewport to the new
+  *Shadows* display mode, which shows the shadow pass live. It is traced in the background
+  with the same code and options as `ShadowCapture`: a quick image while you orbit, then
+  full resolution when the camera stops. It updates when the model, sun, lights or options
+  change.
+- `ShadowCapture` options are now remembered between Rhino sessions and shared with the view.
+
 ## 1.0.0-beta — 2026-11-26
 
 First beta of **ImgTools**, which replaces the separate **ClownID** (0.9.3-beta) and **ZDepth**

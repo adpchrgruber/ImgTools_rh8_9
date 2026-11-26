@@ -3,8 +3,8 @@ Generates ImgTools' UI assets (standard library only):
 
   resources/ImgTools.ico          plug-in icon
   dist/icon.png                   package icon
-  resources/ImgTools.rui          toolbar: ClownID, ClownIDCapture, ZDepth (right-click: ZDepthRange),
-                                  ZDepthCapture, ShadowCapture, AOCapture
+  resources/ImgTools.rui          toolbar: ClownID, ClownIDCapture, ZDepth (right-click: ZDepthRange), ZDepthCapture,
+                                  ShadowView, ShadowCapture, AOCapture
 
 Run from the repository root:  python3 tools/make_ui.py
 GUIDs are fixed so Rhino keeps the toolbar's position and visibility across updates.
@@ -223,6 +223,9 @@ BUTTONS = [
     ('e9e207dc-3997-4d3e-babe-963b04530613', 'c706c1f9-358a-4362-bb2f-ebba50791989',
      '852e9120-76a6-4cb5-a43c-b5e6f69fdde3', capture(depth_shapes), '! _ZDepthCapture', 'Z Depth Capture',
      'Save the active view as a depth map: PNG, 16-bit PNG or EXR, at any size'),
+    ('7d77c8eb-5a3b-4f71-83aa-f06a979e35ab', '110cac9f-b0b7-4761-a94f-946a2489d96c',
+     '7c20c295-2615-4376-904a-c15bb5c2848c', mode(shadow_shapes), '! _ShadowView', 'Shadow View',
+     'Switch the active viewport to the live Shadows view and back'),
     ('6051f9dc-c82c-4c27-9089-7a1d85ef00bc', '5b0b1d51-5770-4abd-9fd9-4d9060b85fa5',
      'e1ecc95a-3121-48bb-8c33-13696ba974a6', capture(shadow_shapes), '! _ShadowCapture', 'Shadow Capture',
      'Save the raw shadows of the sun or lights in the active view as a PNG mask, hard or soft, at any size'),
