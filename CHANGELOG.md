@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.0-beta — 2026-11-26
+
+- **Faster ambient occlusion.** Edge-aware denoising (on by default) smooths the grain across
+  each surface while keeping edges and creases sharp, so 16 rays (the new default) look like
+  64: about 5× faster. On a 300-object, 2.4-million-triangle scene at 1920×1080: 17.7 s → 3.5 s.
+  `Denoise` option in AOCapture and the options window; the live AO view uses it too.
+- **Faster scene preparation.** The ray-tracing BVH builds on all cores (3.6 s → 1.3 s on that scene).
+- Test scene `docs/test-scene-300.3dm`: 100 meshes, 100 NURBS, 100 SubDs.
+
 ## 1.3.0-beta — 2026-11-26
 
 - **Normal pass.** `NormalCapture` saves each visible point's smooth surface normal as colour,

@@ -8,7 +8,7 @@ package. It combines the former **ClownID** and **ZDepth** plug-ins and adds **s
 view and size, and writes a JSON file next to the image that describes it. Written in C# /
 RhinoCommon for Mac and Windows.
 
-> **Beta (1.3.0-beta).** Tested on Rhino 8 and 9 for Mac. Built for Rhino 8 and 9 (Mac and Windows).
+> **Beta (1.4.0-beta).** Tested on Rhino 8 and 9 for Mac. Built for Rhino 8 and 9 (Mac and Windows).
 
 | Rendered | Clown ID | Z Depth |
 |---|---|---|
@@ -38,7 +38,7 @@ views and are used by the capture commands, so what you see is what you save.
 Rhino 8 or 9 (Mac or Windows):
 
 - **From the Package Manager**: search for *ImgTools*.
-- **From the package file**: drag [`dist/imgtools-1.3.0-beta-rh8_0-any.yak`](dist/) into a
+- **From the package file**: drag [`dist/imgtools-1.4.0-beta-rh8_0-any.yak`](dist/) into a
   Rhino window, then restart Rhino.
 - **From the command line**, with this repository checked out:
 
@@ -109,7 +109,8 @@ render or over the shadow pass for more depth and contact.
 | Option | |
 |---|---|
 | `Radius` | How far away geometry still darkens a point, in model units. The default is 5% of the scene's size. Smaller values keep the darkening to tight contact areas; larger values give broad, soft gradients. |
-| `Rays` | Rays per pixel (default 64). Raise it if the pass looks grainy. |
+| `Rays` | Rays per pixel (default 16). Raise it if the pass looks blotchy. |
+| `Denoise` | `On` (default): averages the grain across each surface, guided by depth and normals so edges and creases stay sharp. 16 rays with denoising look like 64 without, about 5× faster. |
 | `OccludedIs` | `Black` (default: white open, black occluded) or `White`. |
 | `AntiAlias`, `Width`, `Height` | As above. |
 
@@ -158,6 +159,21 @@ machine with Rhino 8 it also writes `dist/imgtools-<version>-rh8_0-any.yak`.
   Rays leave curved surfaces slightly lifted, which avoids specks near the terminator. Soft
   shadows and AO use stratified, repeatable sampling: the same scene always gives the same
   image.
+- **Speed**: the BVH builds on all cores, is packed into 32-byte nodes with the triangles in
+  tree order, and closest-hit rays visit the nearer child first. Soft shadows send four rays
+  across the light first and the rest only where those disagree (the penumbra). AO is
+  denoised with an edge-aware "à-trous" filter (three 5×5 passes with growing gaps, each
+  neighbour weighted by how similar its depth and normal are). On the 300-object test scene
+  (2.4 million triangles, 1920×1080, 4 samples per pixel): scene preparation 1.3 s; AO 64 rays
+  17.7 s, 16 rays + denoise 3.5 s.
+- **Live views** (Shadows, AO, Normals): the scene's BVH is built once in the background and
+  reused until the model changes; each camera change cancels the running trace and starts a
+  quick low-resolution pass, then the full one.
+- **Why not Rhino's Arctic mode?** Arctic's lighting scheme is called *AmbientOcclusion*: the
+  graphics card casts skylight shadows from many directions and builds them up over several
+  frames. It is fast and lovely to work in, but it is sky visibility without a radius, mixed
+  with materials, its quality depends on the graphics card and display settings, and a single
+  capture does not wait for it to finish. AOCapture gives a clean, repeatable pass at any size.
 
 ## Notes
 
