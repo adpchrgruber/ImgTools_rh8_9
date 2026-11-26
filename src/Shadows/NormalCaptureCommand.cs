@@ -71,13 +71,21 @@ namespace ImgTools
             if (path == null)
                 return Result.Cancel;
 
-            var clock = Stopwatch.StartNew();
             var scene = TraceScene.Build(doc, view, w, h);
             if (scene == null)
             {
                 RhinoApp.WriteLine("Normal capture failed.");
                 return Result.Failure;
             }
+            return Capture(doc, view, scene, path) ? Result.Success : Result.Failure;
+        }
+
+        /// <summary>Traces the normal pass with the current options into path (.png or .exr, per Format) plus its JSON.</summary>
+        internal static bool Capture(RhinoDoc doc, Rhino.Display.RhinoView view, TraceScene scene, string path)
+        {
+            int format = NormalSettings.Format;
+            bool cameraSpace = NormalSettings.CameraSpace, greenUp = NormalSettings.GreenUp, flat = NormalSettings.FlatBackground;
+            var clock = Stopwatch.StartNew();
             var image = NormalRender.Render(scene, NormalSettings.AntiAlias, cameraSpace, greenUp);
 
             string encoding, background;
@@ -86,7 +94,7 @@ namespace ImgTools
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 if (format == NormalSettings.Exr)
                 {
-                    int n = w * h;
+                    int n = image.Width * image.Height;
                     float[] r = new float[n], g = new float[n], b = new float[n];
                     for (int i = 0; i < n; i++)
                     {
@@ -94,7 +102,7 @@ namespace ImgTools
                         g[i] = image.Rgb[3 * i + 1];
                         b[i] = image.Rgb[3 * i + 2];
                     }
-                    ImageWriters.WriteExr(path, w, h, ("R", r), ("G", g), ("B", b), ("A", image.Coverage));
+                    ImageWriters.WriteExr(path, image.Width, image.Height, ("R", r), ("G", g), ("B", b), ("A", image.Coverage));
                     encoding = "R, G, B = normal x, y, z (unit vector, -1..1); A = coverage";
                     background = "R, G, B = 0, A = 0";
                 }
@@ -102,9 +110,9 @@ namespace ImgTools
                 {
                     var rgb = NormalRender.Encode(image, flat);
                     if (format == NormalSettings.Png16)
-                        ImageWriters.WritePngRgb16(path, w, h, NormalRender.To16(rgb));
+                        ImageWriters.WritePngRgb16(path, image.Width, image.Height, NormalRender.To16(rgb));
                     else
-                        ImageWriters.WritePngRgb8(path, w, h, NormalRender.To8(rgb));
+                        ImageWriters.WritePngRgb8(path, image.Width, image.Height, NormalRender.To8(rgb));
                     encoding = "rgb = normal * 0.5 + 0.5 (x -> red, y -> green, z -> blue); edges blended with the background";
                     background = flat ? "flat normal (0.5, 0.5, 1) = (128, 128, 255)" : "black";
                 }
@@ -113,14 +121,14 @@ namespace ImgTools
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {
                 RhinoApp.WriteLine("Normal capture: could not save {0}: {1}", path, e.Message);
-                return Result.Failure;
+                return false;
             }
 
             RhinoApp.WriteLine(string.Format(CultureInfo.InvariantCulture, "Normal capture: {0} {1}x{2}, {3}, {4:0.0} s.",
-                NormalSettings.Formats[format], w, h, NormalSettings.Describe(), clock.Elapsed.TotalSeconds));
+                NormalSettings.Formats[format], image.Width, image.Height, NormalSettings.Describe(), clock.Elapsed.TotalSeconds));
             RhinoApp.WriteLine("Saved {0}", path);
             RhinoApp.WriteLine("Saved {0}", Path.ChangeExtension(path, ".json"));
-            return Result.Success;
+            return true;
         }
 
         static string BuildJson(RhinoDoc doc, Rhino.Display.RhinoView view, string path, TraceImage image, DepthCamera camera,

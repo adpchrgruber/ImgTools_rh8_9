@@ -74,10 +74,10 @@ namespace ImgTools
             var suggest = new Button { Text = "Suggest" };
             suggest.Click += (s, e) => { _radius.Value = AoSettings.SuggestRadius(_doc); };
             var aoRays = Stepper(AoSettings.Rays, 1, 4096, 0, 8, v => AoSettings.Rays = (int)v);
-            aoRays.ToolTip = "Rays per pixel. With denoising 16 is usually enough; raise it if the pass looks blotchy.";
+            aoRays.ToolTip = "Rays per pixel. 64 gives a clean, natural pass; fewer is faster but grainier.";
             var aoDenoise = new CheckBox { Text = "Smooth the grain (edge-aware)", Checked = AoSettings.Denoise };
             aoDenoise.CheckedChanged += (s, e) => { AoSettings.Denoise = aoDenoise.Checked == true; RhinoDoc.ActiveDoc?.Views.Redraw(); };
-            aoDenoise.ToolTip = "Averages the noise across each surface, keeping edges and creases sharp. 16 rays + this look like 64 rays without, about 5x faster.";
+            aoDenoise.ToolTip = "Averages the grain across each surface, keeping edges sharp. Lets you use far fewer rays (e.g. 16), but the result looks flatter.";
             var aoColour = Drop(new[] { "Occluded black (white open)", "Occluded white (black open)" }, AoSettings.OccludedIsBlack ? 0 : 1, i => AoSettings.OccludedIsBlack = i == 0);
             var aoAa = Stepper(AoSettings.AntiAlias, 1, 4, 0, 1, v => AoSettings.AntiAlias = (int)v);
             aoAa.ToolTip = "Samples per pixel axis in AOCapture (the live view uses 1).";
@@ -90,6 +90,28 @@ namespace ImgTools
             var normalFormat = Drop(new[] { "PNG (8-bit)", "PNG (16-bit)", "EXR (float, with alpha)" }, NormalSettings.Format, i => NormalSettings.Format = i);
             var normalAa = Stepper(NormalSettings.AntiAlias, 1, 4, 0, 1, v => NormalSettings.AntiAlias = (int)v);
             normalAa.ToolTip = "Samples per pixel axis in NormalCapture (the live view uses 1).";
+
+            // --- Capture All -----------------------------------------------------------------
+            CheckBox Pass(string text, bool value, System.Action<bool> set)
+            {
+                var c = new CheckBox { Text = text, Checked = value };
+                c.CheckedChanged += (s, e) => set(c.Checked == true);
+                return c;
+            }
+            var all = new StackLayout
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 10,
+                Items =
+                {
+                    Pass("View", CaptureAllSettings.View, v => CaptureAllSettings.View = v),
+                    Pass("Clown ID", CaptureAllSettings.Clown, v => CaptureAllSettings.Clown = v),
+                    Pass("Z Depth", CaptureAllSettings.Depth, v => CaptureAllSettings.Depth = v),
+                    Pass("Shadows", CaptureAllSettings.Shadows, v => CaptureAllSettings.Shadows = v),
+                    Pass("AO", CaptureAllSettings.Ao, v => CaptureAllSettings.Ao = v),
+                    Pass("Normals", CaptureAllSettings.Normals, v => CaptureAllSettings.Normals = v),
+                },
+            };
 
             var close = new Button { Text = "Close" };
             close.Click += (s, e) => Close();
@@ -140,6 +162,7 @@ namespace ImgTools
                     new GroupBox { Text = "Shadows  (ShadowView, ShadowCapture)", Content = shadows, Padding = new Padding(8) },
                     new GroupBox { Text = "Ambient occlusion  (AOView, AOCapture)", Content = ao, Padding = new Padding(8) },
                     new GroupBox { Text = "Normals  (NormalView, NormalCapture)", Content = normalsLayout, Padding = new Padding(8) },
+                    new GroupBox { Text = "Capture All  (saves these at once)", Content = all, Padding = new Padding(8) },
                     new StackLayout { Orientation = Orientation.Horizontal, Items = { null, close } },
                 },
             };

@@ -172,7 +172,7 @@ namespace ImgTools
                 return null;
             if (guide != null)
             {
-                values = Denoise.Filter(values, guide, scene.Width, scene.Height, cancelled: cancelled);
+                values = Denoise.Filter(values, guide, scene.Width, scene.Height, iterations: 2, cancelled: cancelled);
                 if (values == null)
                     return null;
             }

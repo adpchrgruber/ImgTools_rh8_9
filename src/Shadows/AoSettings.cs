@@ -14,17 +14,20 @@ namespace ImgTools
 
         static PersistentSettings S => ImgToolsPlugin.Instance?.Settings;
 
-        /// <summary>Rays per pixel. 16 with denoising looks like 64 without, at a quarter of the time.</summary>
+        /// <summary>Rays per pixel (default 64).</summary>
         public static int Rays
         {
-            get => S?.GetInteger("AO.Rays", 16) ?? 16;
+            get => S?.GetInteger("AO.Rays", 64) ?? 64;
             set => S?.SetInteger("AO.Rays", value);
         }
 
-        /// <summary>True (default): smooth the grain with an edge-aware filter.</summary>
+        /// <summary>
+        /// Smooth the grain with an edge-aware filter: much faster with few rays, but flatter.
+        /// Off by default; the live view always smooths its quick first image.
+        /// </summary>
         public static bool Denoise
         {
-            get => S?.GetBool("AO.Denoise", true) ?? true;
+            get => S?.GetBool("AO.Denoise", false) ?? false;
             set => S?.SetBool("AO.Denoise", value);
         }
 

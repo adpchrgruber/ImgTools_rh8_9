@@ -54,6 +54,15 @@ namespace ImgTools
             if (path == null)
                 return Result.Cancel;
 
+            return Capture(doc, view, width.CurrentValue, height.CurrentValue, path) ? Result.Success : Result.Failure;
+        }
+
+        /// <summary>Captures the view at the size as a clean clown pass to path (PNG) plus its JSON.</summary>
+        internal static bool Capture(RhinoDoc doc, RhinoView view, int width, int height, string path)
+        {
+            var clown = ClownDisplayMode.Ensure();
+            if (clown == null)
+                return false;
             // Capture through ViewCapture so grid and axes can be switched off.
             var viewport = view.ActiveViewport;
             var previous = viewport.DisplayMode;
@@ -63,8 +72,8 @@ namespace ImgTools
                 viewport.DisplayMode = clown;
                 var capture = new ViewCapture
                 {
-                    Width = width.CurrentValue,
-                    Height = height.CurrentValue,
+                    Width = width,
+                    Height = height,
                     DrawGrid = false,
                     DrawAxes = false,
                     DrawGridAxes = false,
@@ -81,7 +90,7 @@ namespace ImgTools
             if (bitmap == null)
             {
                 RhinoApp.WriteLine("Clown ID capture failed.");
-                return Result.Failure;
+                return false;
             }
 
             // Colour → objects, for snapping and for the JSON.
@@ -116,7 +125,7 @@ namespace ImgTools
                     if (!ReadPixels(image, pixels))
                     {
                         RhinoApp.WriteLine("Clown ID capture: unexpected pixel format.");
-                        return Result.Failure;
+                        return false;
                     }
                     snapped = ClownMask.Snap(pixels, imageWidth, imageHeight, palette);
                     foreach (var p in pixels)
@@ -136,7 +145,7 @@ namespace ImgTools
                 RhinoApp.WriteLine("Clown ID: {0} colour(s) shared by more than one object; see \"collisions\" in the JSON.", collisions);
             RhinoApp.WriteLine("Saved {0}", path);
             RhinoApp.WriteLine("Saved {0}", jsonPath);
-            return Result.Success;
+            return true;
         }
 
         static bool ReadPixels(Eto.Drawing.Bitmap image, int[] pixels)

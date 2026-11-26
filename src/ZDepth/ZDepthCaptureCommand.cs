@@ -28,7 +28,14 @@ namespace ImgTools
         /// <summary>Largest image, in pixels (a float per pixel while rendering).</summary>
         const long MaxPixels = 100000000;
 
-        int _format = Png;
+        /// <summary>Saved with Rhino's settings, shared with CaptureAll.</summary>
+        internal static int Format
+        {
+            get => ImgToolsPlugin.Instance?.Settings.GetInteger("ZDepth.Format", Png) ?? Png;
+            set => ImgToolsPlugin.Instance?.Settings.SetInteger("ZDepth.Format", value);
+        }
+
+        static int _format { get => Format; set => Format = value; }
 
         public override string EnglishName => "ZDepthCapture";
 
@@ -72,11 +79,20 @@ namespace ImgTools
             if (path == null)
                 return Result.Cancel;
 
-            var image = DepthCapture.Render(conduit, doc, view, width.CurrentValue, height.CurrentValue, out var camera);
+            return Capture(doc, view, width.CurrentValue, height.CurrentValue, path, _format) ? Result.Success : Result.Failure;
+        }
+
+        /// <summary>Saves the view's depth at the size to path (format: PNG, PNG16 or EXR) plus its JSON.</summary>
+        internal static bool Capture(RhinoDoc doc, RhinoView view, int width, int height, string path, int format)
+        {
+            var conduit = ImgToolsPlugin.Instance?.DepthConduit;
+            if (conduit == null)
+                return false;
+            var image = DepthCapture.Render(conduit, doc, view, width, height, out var camera);
             if (image == null)
             {
                 RhinoApp.WriteLine("Z Depth capture failed.");
-                return Result.Failure;
+                return false;
             }
             if (image.Hits == 0)
                 RhinoApp.WriteLine("Z Depth: no surfaces visible in {0}.", view.ActiveViewport.Name);
@@ -93,7 +109,7 @@ namespace ImgTools
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 int w = image.Width, h = image.Height;
                 var depth = image.Depth;
-                if (_format == Exr)
+                if (format == Exr)
                 {
                     var z = new float[depth.Length];
                     for (int i = 0; i < z.Length; i++)
@@ -104,7 +120,7 @@ namespace ImgTools
                 }
                 else
                 {
-                    int max = _format == Png16 ? 65535 : 255;
+                    int max = format == Png16 ? 65535 : 255;
                     var levels = new int[depth.Length];
                     for (int i = 0; i < levels.Length; i++)
                     {
@@ -117,7 +133,7 @@ namespace ImgTools
                         t = t < 0 ? 0 : t > 1 ? 1 : t;
                         levels[i] = (int)Math.Round(max * (white ? 1 - t : t));
                     }
-                    if (_format == Png16)
+                    if (format == Png16)
                         ImageWriters.WritePng16(path, w, h, Array.ConvertAll(levels, v => (ushort)v));
                     else
                         ImageWriters.WritePng8(path, w, h, Array.ConvertAll(levels, v => (byte)v));
@@ -131,15 +147,15 @@ namespace ImgTools
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {
                 RhinoApp.WriteLine("Z Depth: could not save {0}: {1}", path, e.Message);
-                return Result.Failure;
+                return false;
             }
 
             RhinoApp.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                "Z Depth: {0} {1}x{2}, near {3:G6}, far {4:G6} {5}.", Formats[_format], image.Width, image.Height,
+                "Z Depth: {0} {1}x{2}, near {3:G6}, far {4:G6} {5}.", Formats[format], image.Width, image.Height,
                 range.T0, range.T1, doc.ModelUnitSystem));
             RhinoApp.WriteLine("Saved {0}", path);
             RhinoApp.WriteLine("Saved {0}", jsonPath);
-            return Result.Success;
+            return true;
         }
 
         static string BuildJson(RhinoDoc doc, RhinoView view, string imagePath, DepthImage image, DepthCamera camera,

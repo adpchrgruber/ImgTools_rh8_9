@@ -94,13 +94,28 @@ namespace ImgTools
                 return Result.Cancel;
 
             RhinoApp.WriteLine(string.Format("Shadow capture: tracing {0}x{1} at {2}x{2} samples, {3} light(s)...", w, h, _antialias, lights.Count));
-            var clock = Stopwatch.StartNew();
             var scene = TraceScene.Build(doc, view, w, h);
             if (scene == null)
             {
                 RhinoApp.WriteLine("Shadow capture failed.");
                 return Result.Failure;
             }
+            return Capture(doc, view, scene, path, lights) ? Result.Success : Result.Failure;
+        }
+
+        /// <summary>Traces the shadow pass with the current options into path (PNG) plus its JSON.</summary>
+        internal static bool Capture(RhinoDoc doc, RhinoView view, TraceScene scene, string path, IList<ShadowLight> lights = null)
+        {
+            if (lights == null)
+            {
+                lights = ShadowLights.Collect(doc, _source, out var problem);
+                if (lights.Count == 0)
+                {
+                    RhinoApp.WriteLine("Shadow capture: " + problem);
+                    return false;
+                }
+            }
+            var clock = Stopwatch.StartNew();
             var image = ShadowRender.Render(scene, _antialias, lights, _formShadows, _softness, _rays);
 
             // Shadow amount to grey; background and lit surfaces are "no shadow".
@@ -110,17 +125,17 @@ namespace ImgTools
                     shadowed++;
             var json = BuildJson(doc, view, path, image, scene.Camera, lights);
             if (!TraceCapture.Save(path, image, invert: !_shadowIsWhite, json, "Shadow capture"))
-                return Result.Failure;
+                return false;
 
             RhinoApp.WriteLine(string.Format(CultureInfo.InvariantCulture,
                 "Shadow capture: {0}x{1}, {2:0.#}% of the image in shadow, {3} triangles, {4:0.0} s.",
                 image.Width, image.Height, 100.0 * shadowed / image.Value.Length, image.Triangles, clock.Elapsed.TotalSeconds));
             RhinoApp.WriteLine("Saved {0}", path);
             RhinoApp.WriteLine("Saved {0}", Path.ChangeExtension(path, ".json"));
-            return Result.Success;
+            return true;
         }
 
-        string BuildJson(RhinoDoc doc, RhinoView view, string imagePath, TraceImage image, DepthCamera camera, IList<ShadowLight> lights)
+        static string BuildJson(RhinoDoc doc, RhinoView view, string imagePath, TraceImage image, DepthCamera camera, IList<ShadowLight> lights)
         {
             var sb = new StringBuilder();
             TraceCapture.JsonHead(sb, doc, view, imagePath, image);
@@ -223,13 +238,20 @@ namespace ImgTools
                 return Result.Cancel;
 
             RhinoApp.WriteLine(string.Format("AO capture: tracing {0}x{1} at {2}x{2} samples, {3} rays per pixel...", w, h, _antialias, _rays));
-            var clock = Stopwatch.StartNew();
             var scene = TraceScene.Build(doc, view, w, h);
             if (scene == null)
             {
                 RhinoApp.WriteLine("AO capture failed.");
                 return Result.Failure;
             }
+            return Capture(doc, view, scene, path) ? Result.Success : Result.Failure;
+        }
+
+        /// <summary>Traces the AO pass with the current options into path (PNG) plus its JSON.</summary>
+        internal static bool Capture(RhinoDoc doc, RhinoView view, TraceScene scene, string path)
+        {
+            double _radius = AoSettings.Radius(doc);
+            var clock = Stopwatch.StartNew();
             var image = AoRender.Render(scene, _antialias, _radius, _rays, denoise: AoSettings.Denoise);
 
             var sb = new StringBuilder();
@@ -238,7 +260,7 @@ namespace ImgTools
             sb.Append("  \"units\": ").Append(CaptureIO.Str(doc.ModelUnitSystem.ToString())).Append(",\n");
             sb.Append("  \"rays\": ").Append(_rays).Append(",\n");
             sb.Append("  \"falloff\": \"a hit at distance d occludes by 1 - d / radius\",\n");
-            sb.Append("  \"denoise\": ").Append(AoSettings.Denoise ? "\"edge-aware (depth and normal guided), 3 passes\"" : "false").Append(",\n");
+            sb.Append("  \"denoise\": ").Append(AoSettings.Denoise ? "\"edge-aware (depth and normal guided), 2 passes\"" : "false").Append(",\n");
             sb.Append("  \"encoding\": ").Append(CaptureIO.Str(_occludedIsBlack
                 ? "grey = 255 * openness (white = open, black = occluded)"
                 : "grey = 255 * occlusion (black = open, white = occluded)")).Append(",\n");
@@ -246,14 +268,14 @@ namespace ImgTools
             sb.Append("  \"antialias\": ").Append(_antialias).Append(",\n");
             TraceCapture.JsonCamera(sb, view, scene.Camera);
             if (!TraceCapture.Save(path, image, invert: !_occludedIsBlack, sb.ToString(), "AO capture"))
-                return Result.Failure;
+                return false;
 
             RhinoApp.WriteLine(string.Format(CultureInfo.InvariantCulture,
                 "AO capture: {0}x{1}, radius {2:G4}, {3} triangles, {4:0.0} s.",
                 image.Width, image.Height, _radius, image.Triangles, clock.Elapsed.TotalSeconds));
             RhinoApp.WriteLine("Saved {0}", path);
             RhinoApp.WriteLine("Saved {0}", Path.ChangeExtension(path, ".json"));
-            return Result.Success;
+            return true;
         }
     }
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0-beta — 2026-11-26
+
+- **Capture All.** One command and toolbar button saves the view as it looks plus Clown ID,
+  Z Depth, shadows, AO and normals at once, same size and camera, with matching file names and
+  a `_passes.json` listing them. Shadows, AO and normals share one scene preparation. Pick the
+  passes in its options or in the options window.
+- **AO looks as before again.** Back to 64 rays without smoothing by default: the denoised
+  version was faster but flatter. Denoising stays as an option (now gentler: two passes); the
+  live AO view uses it only for its quick first image.
+- Z Depth's file format is now remembered between sessions.
+
 ## 1.4.0-beta — 2026-11-26
 
 - **Faster ambient occlusion.** Edge-aware denoising (on by default) smooths the grain across

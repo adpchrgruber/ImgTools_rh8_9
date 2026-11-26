@@ -6,7 +6,8 @@ Generates ImgTools' UI assets (standard library only):
   resources/ImgTools.rui          toolbar: ClownID, ClownIDCapture, ZDepth (right-click: ZDepthRange), ZDepthCapture,
                                   ShadowView (right-click: ImgToolsOptions), ShadowCapture,
                                   AOView (right-click: ImgToolsOptions), AOCapture,
-                                  NormalView (right-click: ImgToolsOptions), NormalCapture
+                                  NormalView (right-click: ImgToolsOptions), NormalCapture,
+                                  CaptureAll (right-click: ImgToolsOptions)
 
 Run from the repository root:  python3 tools/make_ui.py
 GUIDs are fixed so Rhino keeps the toolbar's position and visibility across updates.
@@ -160,6 +161,23 @@ def normal_shapes(x, y, box=(0.0, 0.0, 1.0, 1.0)):
     return enc(0, 0, 1)                  # flat ground
 
 
+def all_shapes(x, y, box=(0.0, 0.0, 1.0, 1.0)):
+    """Four passes in a 2 x 2 grid: clown, depth, shadows, normals."""
+    x0, y0, x1, y1 = box
+    u, v = (x - x0) / (x1 - x0), (y - y0) / (y1 - y0)
+    if not (0 <= u <= 1 and 0 <= v <= 1):
+        return None
+    gap = 0.06
+    cu, cv = (u >= 0.5), (v >= 0.5)
+    su = (u - (0.5 + gap / 2 if cu else 0)) / (0.5 - gap / 2)
+    sv = (v - (0.5 + gap / 2 if cv else 0)) / (0.5 - gap / 2)
+    if not (0 <= su <= 1 and 0 <= sv <= 1):
+        return None
+    tile = [[clown_shapes, depth_shapes], [shadow_shapes, normal_shapes]][cv][cu]
+    background = (128, 128, 255) if tile is normal_shapes else BLACK
+    return tile(su, sv) or background
+
+
 def plugin_icon(x, y):
     """Three bands: clown, depth, shadow."""
     if not in_rounded_square(x, y):
@@ -264,6 +282,9 @@ BUTTONS = [
     ('932c4aea-85bb-413e-bfc8-10575978a811', '7e04ec47-500d-4c45-aac1-330ddf8c0969',
      'b5016467-c77e-40da-b95d-17ccc03d85b8', capture(normal_shapes), '! _NormalCapture', 'Normal Capture',
      'Save a normal pass of the active view: PNG, 16-bit PNG or EXR, camera or world space'),
+    ('baffec68-786c-4e05-8f02-7ee56968d981', '16e2f329-efc3-4e71-8989-a470383c8206',
+     '3b00f9f2-3d4d-4008-9fe3-eb8d06e53a89', capture(all_shapes), '! _CaptureAll', 'Capture All',
+     'Save the view and every pass at once, same size and camera (right-click: options)'),
 ]
 
 # Right-click on a button: (button index, macro id, script, name, tooltip)
@@ -275,6 +296,8 @@ RIGHT_MACROS = [
     (6, '2ce90562-8fcb-456a-9121-df823a473d44', '! _ImgToolsOptions', 'ImgTools Options',
      'How the Shadows, AO and Normals passes look, live and in captures'),
     (8, '2616d519-ff54-4bdb-868d-656e4d0e149f', '! _ImgToolsOptions', 'ImgTools Options',
+     'How the Shadows, AO and Normals passes look, live and in captures'),
+    (10, 'c500f994-28c0-46cd-8f20-72370a6bd306', '! _ImgToolsOptions', 'ImgTools Options',
      'How the Shadows, AO and Normals passes look, live and in captures')
 ]
 

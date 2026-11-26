@@ -235,7 +235,7 @@ namespace ImgTools
                     return pass == TracePass.Shadows
                         ? ShadowRender.Render(scene, 1, lights, form, softness, fast ? Math.Min(shadowRays, 4) : shadowRays, cancelled)
                         : pass == TracePass.AmbientOcclusion
-                        ? AoRender.Render(scene, 1, radius, fast ? Math.Min(aoRays, 4) : aoRays, cancelled, aoDenoise)
+                        ? AoRender.Render(scene, 1, radius, fast ? Math.Min(aoRays, 4) : aoRays, cancelled, fast || aoDenoise)
                         : NormalRender.Render(scene, 1, cameraSpace, greenUp, cancelled);
                 }
 

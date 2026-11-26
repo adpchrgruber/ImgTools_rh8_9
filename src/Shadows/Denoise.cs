@@ -5,8 +5,8 @@ namespace ImgTools
 {
     /// <summary>
     /// Edge-aware smoothing of a noisy traced pass (an "à-trous" wavelet filter): a 5×5 blur
-    /// applied three times with growing gaps (1, 2, 4 pixels), so it reaches 29 pixels across at
-    /// the cost of 75 taps. Each neighbour counts only as much as it lies on the same surface:
+    /// applied repeatedly with growing gaps (1, 2, 4 … pixels); two passes reach 13 pixels across,
+    /// three 29. Each neighbour counts only as much as it lies on the same surface:
     /// similar depth and similar normal. Edges, creases and contact lines therefore stay sharp
     /// while the grain of a low ray count is averaged away.
     /// </summary>
