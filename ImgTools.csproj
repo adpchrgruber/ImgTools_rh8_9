@@ -16,7 +16,7 @@
 
   <PropertyGroup>
     <!-- Specifies information for Assembly and Yak -->
-    <Version>1.3.0-beta</Version>
+    <Version>1.4.0-beta</Version>
     <Title>ImgTools</Title>
     <Authors>adpchrgruber</Authors>
     <Company>adpchrgruber</Company>

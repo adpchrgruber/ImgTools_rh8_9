@@ -214,8 +214,15 @@ namespace ImgTools
 
         void Build(int node, int start, int count, float[] centroid, int depth)
         {
-            if (depth > _depth)
-                _depth = depth;
+            // Deepest level so far (subtrees build in parallel).
+            int seen = System.Threading.Volatile.Read(ref _depth);
+            while (depth > seen)
+            {
+                int was = System.Threading.Interlocked.CompareExchange(ref _depth, depth, seen);
+                if (was == seen)
+                    break;
+                seen = was;
+            }
             // Bounds of the triangles, and of their centroids.
             float bx0 = float.MaxValue, by0 = float.MaxValue, bz0 = float.MaxValue;
             float bx1 = float.MinValue, by1 = float.MinValue, bz1 = float.MinValue;
@@ -344,12 +351,22 @@ namespace ImgTools
             Children(node, start, count, leftSize, centroid, depth);
         }
 
+        /// <summary>Subtrees at least this large build on their own thread.</summary>
+        const int ParallelBuild = 20000;
+
         void Children(int node, int start, int count, int leftSize, float[] centroid, int depth)
         {
-            int left = _nodes;
-            _nodes += 2;
+            // Children ranges of _order and node slots are disjoint, so subtrees can build at once.
+            int left = System.Threading.Interlocked.Add(ref _nodes, 2) - 2;
             _first[node] = left;
             _count[node] = 0;   // inner
+            if (count >= ParallelBuild)
+            {
+                System.Threading.Tasks.Parallel.Invoke(
+                    () => Build(left, start, leftSize, centroid, depth + 1),
+                    () => Build(left + 1, start + leftSize, count - leftSize, centroid, depth + 1));
+                return;
+            }
             Build(left, start, leftSize, centroid, depth + 1);
             Build(left + 1, start + leftSize, count - leftSize, centroid, depth + 1);
         }

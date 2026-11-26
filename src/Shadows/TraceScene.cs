@@ -19,6 +19,23 @@ namespace ImgTools
         public ShadowBvh.Role Role;
     }
 
+    /// <summary>Per pixel: depth along the view and surface normal of its first hit, for edge-aware filtering.</summary>
+    internal sealed class PixelGuide
+    {
+        public float[] Depth;          // NaN where nothing was hit
+        public float[] Nx, Ny, Nz;
+
+        public PixelGuide(int count)
+        {
+            Depth = new float[count];
+            Nx = new float[count];
+            Ny = new float[count];
+            Nz = new float[count];
+            for (int i = 0; i < count; i++)
+                Depth[i] = float.NaN;
+        }
+    }
+
     /// <summary>
     /// The scene of a view for CPU ray tracing: its exact camera (from a probe capture, as
     /// ZDepthCapture uses), the triangles of every shown object in a BVH, and the clipping
@@ -104,9 +121,11 @@ namespace ImgTools
         /// </summary>
         /// <remarks>Returns null when <paramref name="cancelled"/> turns true before the image is done.</remarks>
         public float[] Shade(int samples, double miss, Func<SurfaceHit, int[], Rng, double> shade, out float[] coverage,
-            Func<bool> cancelled = null)
+            Func<bool> cancelled = null, PixelGuide guide = null)
         {
             int width = Width, height = Height;
+            var eye = (Vector3d)(Camera.Location - Bvh.Origin);
+            var forward = Camera.Direction;
             var values = new float[width * height];
             var cover = new float[width * height];
             int s = Math.Max(1, samples);
@@ -130,6 +149,14 @@ namespace ImgTools
                             {
                                 sum += miss;
                                 continue;
+                            }
+                            if (hits == 0 && guide != null)
+                            {
+                                int g = y * width + x;
+                                guide.Depth[g] = (float)((hit.Point - eye) * forward);
+                                guide.Nx[g] = (float)hit.Smooth.X;
+                                guide.Ny[g] = (float)hit.Smooth.Y;
+                                guide.Nz[g] = (float)hit.Smooth.Z;
                             }
                             hits++;
                             var rng = new Rng((uint)(y * width + x), (uint)(sy * s + sx));

@@ -136,7 +136,8 @@ namespace ImgTools
     /// </summary>
     internal static class AoRender
     {
-        public static TraceImage Render(TraceScene scene, int samples, double radius, int rays, Func<bool> cancelled = null)
+        /// <param name="denoise">Smooth the grain with an edge-aware filter (see <see cref="Denoise"/>), so far fewer rays give a clean image.</param>
+        public static TraceImage Render(TraceScene scene, int samples, double radius, int rays, Func<bool> cancelled = null, bool denoise = false)
         {
             var bvh = scene.Bvh;
             double eps = scene.Eps;
@@ -145,6 +146,7 @@ namespace ImgTools
             int grid = Math.Max(1, (int)Math.Round(Math.Sqrt(perSample)));
             perSample = grid * grid;
 
+            var guide = denoise ? new PixelGuide(scene.Width * scene.Height) : null;
             var values = scene.Shade(samples, 1, (hit, stack, rng) =>
             {
                 var start = scene.RayStart(hit);
@@ -165,9 +167,15 @@ namespace ImgTools
                     }
                 }
                 return 1 - occlusion / perSample;
-            }, out var coverage, cancelled);
+            }, out var coverage, cancelled, guide);
             if (values == null)
                 return null;
+            if (guide != null)
+            {
+                values = Denoise.Filter(values, guide, scene.Width, scene.Height, cancelled: cancelled);
+                if (values == null)
+                    return null;
+            }
 
             return new TraceImage
             {

@@ -189,7 +189,7 @@ namespace ImgTools
             else if (_pass == TracePass.AmbientOcclusion)
             {
                 N(AoSettings.Radius(doc));
-                sb.Append(AoSettings.Rays).Append(AoSettings.OccludedIsBlack);
+                sb.Append(AoSettings.Rays).Append(AoSettings.OccludedIsBlack).Append(AoSettings.Denoise);
             }
             else
                 sb.Append(NormalSettings.CameraSpace).Append(NormalSettings.GreenUp).Append(NormalSettings.FlatBackground);
@@ -213,6 +213,7 @@ namespace ImgTools
             int shadowRays = ShadowSettings.Rays;
             double radius = AoSettings.Radius(doc);
             int aoRays = AoSettings.Rays;
+            bool aoDenoise = AoSettings.Denoise;
             // Grey = value, or 1 - value: shadow white / occlusion black are the defaults.
             bool invert = pass == TracePass.Shadows ? !ShadowSettings.ShadowIsWhite : !AoSettings.OccludedIsBlack;
             bool cameraSpace = NormalSettings.CameraSpace, greenUp = NormalSettings.GreenUp, flat = NormalSettings.FlatBackground;
@@ -234,7 +235,7 @@ namespace ImgTools
                     return pass == TracePass.Shadows
                         ? ShadowRender.Render(scene, 1, lights, form, softness, fast ? Math.Min(shadowRays, 4) : shadowRays, cancelled)
                         : pass == TracePass.AmbientOcclusion
-                        ? AoRender.Render(scene, 1, radius, fast ? Math.Min(aoRays, 9) : aoRays, cancelled)
+                        ? AoRender.Render(scene, 1, radius, fast ? Math.Min(aoRays, 4) : aoRays, cancelled, aoDenoise)
                         : NormalRender.Render(scene, 1, cameraSpace, greenUp, cancelled);
                 }
 

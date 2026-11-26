@@ -14,10 +14,18 @@ namespace ImgTools
 
         static PersistentSettings S => ImgToolsPlugin.Instance?.Settings;
 
+        /// <summary>Rays per pixel. 16 with denoising looks like 64 without, at a quarter of the time.</summary>
         public static int Rays
         {
-            get => S?.GetInteger("AO.Rays", 64) ?? 64;
+            get => S?.GetInteger("AO.Rays", 16) ?? 16;
             set => S?.SetInteger("AO.Rays", value);
+        }
+
+        /// <summary>True (default): smooth the grain with an edge-aware filter.</summary>
+        public static bool Denoise
+        {
+            get => S?.GetBool("AO.Denoise", true) ?? true;
+            set => S?.SetBool("AO.Denoise", value);
         }
 
         public static int AntiAlias

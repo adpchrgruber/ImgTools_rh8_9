@@ -190,9 +190,11 @@ namespace ImgTools
                 var rays = new OptionInteger(_rays, 1, 4096);
                 var aa = new OptionInteger(_antialias, 1, 4);
                 var black = new OptionToggle(_occludedIsBlack, "White", "Black");
+                var denoise = new OptionToggle(AoSettings.Denoise, "Off", "On");
                 int radiusIndex = go.AddOptionDouble("Radius", ref radius, "How far geometry still occludes, in model units");
                 int raysIndex = go.AddOptionInteger("Rays", ref rays, "Rays per pixel");
                 int blackIndex = go.AddOptionToggle("OccludedIs", ref black);
+                int denoiseIndex = go.AddOptionToggle("Denoise", ref denoise);
                 int aaIndex = go.AddOptionInteger("AntiAlias", ref aa);
                 go.AddOptionInteger("Width", ref width);
                 go.AddOptionInteger("Height", ref height);
@@ -203,6 +205,7 @@ namespace ImgTools
                     if (index == radiusIndex) AoSettings.SetRadius(doc, _radius = radius.CurrentValue);
                     else if (index == raysIndex) _rays = rays.CurrentValue;
                     else if (index == blackIndex) _occludedIsBlack = black.CurrentValue;
+                    else if (index == denoiseIndex) AoSettings.Denoise = denoise.CurrentValue;
                     else if (index == aaIndex) _antialias = aa.CurrentValue;
                     doc.Views.Redraw();   // the AO view follows these options
                     continue;
@@ -227,7 +230,7 @@ namespace ImgTools
                 RhinoApp.WriteLine("AO capture failed.");
                 return Result.Failure;
             }
-            var image = AoRender.Render(scene, _antialias, _radius, _rays);
+            var image = AoRender.Render(scene, _antialias, _radius, _rays, denoise: AoSettings.Denoise);
 
             var sb = new StringBuilder();
             TraceCapture.JsonHead(sb, doc, view, path, image);
@@ -235,6 +238,7 @@ namespace ImgTools
             sb.Append("  \"units\": ").Append(CaptureIO.Str(doc.ModelUnitSystem.ToString())).Append(",\n");
             sb.Append("  \"rays\": ").Append(_rays).Append(",\n");
             sb.Append("  \"falloff\": \"a hit at distance d occludes by 1 - d / radius\",\n");
+            sb.Append("  \"denoise\": ").Append(AoSettings.Denoise ? "\"edge-aware (depth and normal guided), 3 passes\"" : "false").Append(",\n");
             sb.Append("  \"encoding\": ").Append(CaptureIO.Str(_occludedIsBlack
                 ? "grey = 255 * openness (white = open, black = occluded)"
                 : "grey = 255 * occlusion (black = open, white = occluded)")).Append(",\n");
